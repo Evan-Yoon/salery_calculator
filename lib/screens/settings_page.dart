@@ -166,8 +166,9 @@ class _SettingsPageState extends State<SettingsPage> {
                 title: Text(preset.name,
                     style: const TextStyle(fontWeight: FontWeight.bold)),
                 subtitle: Text(
-                  '${preset.startTime.format(context)} ~ ${preset.endTime.format(context)} (휴게 ${preset.breakTimeMinutes}분)',
-                  style: const TextStyle(fontSize: 12, color: Colors.grey),
+                  '${preset.startTime.format(context)} ~ ${preset.endTime.format(context)} (휴게 ${preset.breakTimeMinutes}분)\n수당 배율: ${preset.payMultiplier.toStringAsFixed(2)}배',
+                  style: const TextStyle(
+                      fontSize: 12, color: Colors.grey, height: 1.5),
                 ),
                 trailing: const Icon(Icons.edit, size: 20, color: Colors.grey),
                 onTap: () => _showEditPresetDialog(preset),
@@ -184,6 +185,7 @@ class _SettingsPageState extends State<SettingsPage> {
     TimeOfDay tempStartTime = preset.startTime;
     TimeOfDay tempEndTime = preset.endTime;
     int tempBreakTime = preset.breakTimeMinutes;
+    double tempMultiplier = preset.payMultiplier;
 
     showModalBottomSheet(
       context: context,
@@ -215,8 +217,9 @@ class _SettingsPageState extends State<SettingsPage> {
                           onTap: () async {
                             final picked = await showTimePicker(
                                 context: ctx, initialTime: tempStartTime);
-                            if (picked != null)
+                            if (picked != null) {
                               setModalState(() => tempStartTime = picked);
+                            }
                           },
                           child: Container(
                             padding: const EdgeInsets.all(16),
@@ -244,8 +247,9 @@ class _SettingsPageState extends State<SettingsPage> {
                           onTap: () async {
                             final picked = await showTimePicker(
                                 context: ctx, initialTime: tempEndTime);
-                            if (picked != null)
+                            if (picked != null) {
                               setModalState(() => tempEndTime = picked);
+                            }
                           },
                           child: Container(
                             padding: const EdgeInsets.all(16),
@@ -304,6 +308,51 @@ class _SettingsPageState extends State<SettingsPage> {
                     ],
                   ),
 
+                  const SizedBox(height: 24),
+
+                  // 수당 배율 선택 부분
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      const Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text('수당 배율', style: TextStyle(fontSize: 16)),
+                          Text('1.0배 = 기본 시급',
+                              style:
+                                  TextStyle(color: Colors.grey, fontSize: 12)),
+                        ],
+                      ),
+                      Container(
+                        decoration: BoxDecoration(
+                            color: Colors.white10,
+                            borderRadius: BorderRadius.circular(12)),
+                        child: Row(
+                          children: [
+                            IconButton(
+                              icon: const Icon(Icons.remove, size: 16),
+                              onPressed: () => setModalState(() {
+                                if (tempMultiplier > 1.0) {
+                                  tempMultiplier -= 0.05;
+                                }
+                              }),
+                            ),
+                            Text('${tempMultiplier.toStringAsFixed(2)}배',
+                                style: const TextStyle(
+                                    fontSize: 16, fontWeight: FontWeight.bold)),
+                            IconButton(
+                              icon: const Icon(Icons.add, size: 16),
+                              color: Theme.of(context).colorScheme.primary,
+                              onPressed: () => setModalState(() {
+                                tempMultiplier += 0.05;
+                              }),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+
                   const SizedBox(height: 32),
                   ElevatedButton(
                     onPressed: () {
@@ -313,6 +362,7 @@ class _SettingsPageState extends State<SettingsPage> {
                         startTime: tempStartTime,
                         endTime: tempEndTime,
                         breakTimeMinutes: tempBreakTime,
+                        payMultiplier: tempMultiplier,
                       );
                       Provider.of<SalaryProvider>(context, listen: false)
                           .updateShiftPreset(updatedPreset);

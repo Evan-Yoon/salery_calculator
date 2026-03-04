@@ -9,6 +9,8 @@ class ShiftCalculator {
     required bool isHoliday,
     required double hourlyWage,
     required bool isFiveOrMoreEmployees,
+    required double
+        payMultiplier, // [STUDY NOTE]: 기본 시급 대비 수당 배율 (예: 1.0, 1.25, 1.5)
   }) {
     // 1. 총 근무 시간 계산
     Duration totalDuration = endTime.difference(startTime);
@@ -42,7 +44,18 @@ class ShiftCalculator {
     double nightAllowance =
         isFiveOrMoreEmployees ? nightHours * hourlyWage * 0.5 : 0.0;
 
-    return basePay + overtimeAllowance + nightAllowance;
+    // 6. 프리셋 커스텀 수당 (예: 이브닝 1.25배면 0.25배 해당액 추가)
+    double customAllowance = 0.0;
+    if (payMultiplier > 1.0) {
+      customAllowance = basePay * (payMultiplier - 1.0);
+    }
+
+    // 주의: 법정 야간/연장 수당과 병원별 커스텀 수당(예: 이브닝 1.25배)이 중복될 수 있습니다.
+    // 사용자가 프리셋 수당(1.25배 등)을 적용한다면, 보통 법정 수당을 포괄하는 경우가 많음.
+    // 여기서는 법정 수당과 커스텀 수당 중 더 큰 혜택(또는 합산)을 어떻게 정할지는
+    // 기본적으로 합산하여 보여주되, 사용자가 '5인 이상 사업장' 옵션을 끄면 커스텀 수당만 적용됩니다.
+
+    return basePay + overtimeAllowance + nightAllowance + customAllowance;
   }
 
   // [STUDY NOTE]: 밤 10시(22:00)부터 다음 날 아침 6시(06:00) 사이에 근무한 '야간 근로 시간'만을 추려내는 내부용(private) 함수입니다.

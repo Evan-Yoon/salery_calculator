@@ -20,6 +20,7 @@ class _AddShiftPageState extends State<AddShiftPage> {
   TimeOfDay _endTime = const TimeOfDay(hour: 18, minute: 0);
   int _breakTimeMinutes = 60;
   bool _isHoliday = false;
+  double _payMultiplier = 1.0;
 
   @override
   Widget build(BuildContext context) {
@@ -99,6 +100,7 @@ class _AddShiftPageState extends State<AddShiftPage> {
               _startTime = preset.startTime;
               _endTime = preset.endTime;
               _breakTimeMinutes = preset.breakTimeMinutes;
+              _payMultiplier = preset.payMultiplier;
             });
           },
         );
@@ -277,18 +279,48 @@ class _AddShiftPageState extends State<AddShiftPage> {
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          const Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text('휴일 근무 여부', style: TextStyle(fontSize: 16)),
-              Text('휴일 수당이 적용됩니다',
-                  style: TextStyle(color: Colors.grey, fontSize: 12)),
-            ],
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text('수당 배율', style: TextStyle(fontSize: 16)),
+                const Text('근무 조에 따른 배율 (1.0 = 배율 없음)',
+                    style: TextStyle(color: Colors.grey, fontSize: 12)),
+                const SizedBox(height: 8),
+                Row(
+                  children: [
+                    IconButton(
+                      icon: const Icon(Icons.remove_circle_outline),
+                      onPressed: () => setState(() {
+                        if (_payMultiplier > 1.0) _payMultiplier -= 0.05;
+                      }),
+                    ),
+                    Text('${_payMultiplier.toStringAsFixed(2)}배',
+                        style: const TextStyle(
+                            fontWeight: FontWeight.bold, fontSize: 16)),
+                    IconButton(
+                      icon: const Icon(Icons.add_circle_outline),
+                      onPressed: () => setState(() {
+                        _payMultiplier += 0.05;
+                      }),
+                    ),
+                  ],
+                ),
+              ],
+            ),
           ),
-          Switch(
-            value: _isHoliday,
-            onChanged: (val) => setState(() => _isHoliday = val),
-            activeThumbColor: Theme.of(context).colorScheme.primary,
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.end,
+            children: [
+              const Text('휴일 근무', style: TextStyle(fontSize: 16)),
+              const Text('1.5배 수당 추가',
+                  style: TextStyle(color: Colors.grey, fontSize: 12)),
+              Switch(
+                value: _isHoliday,
+                onChanged: (val) => setState(() => _isHoliday = val),
+                activeThumbColor: Theme.of(context).colorScheme.primary,
+              ),
+            ],
           ),
         ],
       ),
@@ -442,6 +474,7 @@ class _AddShiftPageState extends State<AddShiftPage> {
       isHoliday: _isHoliday,
       hourlyWage: provider.hourlyWage,
       isFiveOrMoreEmployees: provider.isFiveOrMoreEmployees,
+      payMultiplier: _payMultiplier,
     );
 
     final entry = ShiftEntry(
@@ -452,6 +485,7 @@ class _AddShiftPageState extends State<AddShiftPage> {
       breakTimeMinutes: _breakTimeMinutes,
       isHoliday: _isHoliday,
       hourlyWage: provider.hourlyWage,
+      payMultiplier: _payMultiplier,
       totalPay: totalPay,
     );
 

@@ -10,6 +10,7 @@ class ShiftEntry {
   final int breakTimeMinutes; // [STUDY NOTE]: 휴게 시간(분 단위)입니다. 급여 계산에서 제외됩니다.
   final bool isHoliday; // [STUDY NOTE]: 휴일 근무 여부입니다. (휴일 수당 1.5배 적용을 위함)
   final double hourlyWage; // [STUDY NOTE]: 이 근무를 했을 당시의 시급입니다.
+  final double payMultiplier; // [STUDY NOTE]: 이 근무에 적용된 배율 (기본 1.0)
   final double totalPay; // [STUDY NOTE]: 계산된 최종 급여(수당 포함)입니다.
 
   // [STUDY NOTE]: 생성자(Constructor)입니다. 객체를 만들 때 필수(required)로 값을 받도록 설정했습니다.
@@ -21,6 +22,7 @@ class ShiftEntry {
     required this.breakTimeMinutes,
     required this.isHoliday,
     required this.hourlyWage,
+    required this.payMultiplier,
     required this.totalPay,
   });
 
@@ -35,6 +37,7 @@ class ShiftEntry {
       'breakTimeMinutes': breakTimeMinutes,
       'isHoliday': isHoliday,
       'hourlyWage': hourlyWage,
+      'payMultiplier': payMultiplier,
       'totalPay': totalPay,
     };
   }
@@ -51,6 +54,7 @@ class ShiftEntry {
       breakTimeMinutes: map['breakTimeMinutes']?.toInt() ?? 0,
       isHoliday: map['isHoliday'] ?? false,
       hourlyWage: map['hourlyWage']?.toDouble() ?? 0.0,
+      payMultiplier: map['payMultiplier']?.toDouble() ?? 1.0,
       totalPay: map['totalPay']?.toDouble() ?? 0.0,
     );
   }

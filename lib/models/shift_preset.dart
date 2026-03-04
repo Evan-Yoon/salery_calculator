@@ -8,6 +8,8 @@ class ShiftPreset {
   final TimeOfDay startTime;
   final TimeOfDay endTime;
   final int breakTimeMinutes;
+  final double
+      payMultiplier; // [STUDY NOTE]: 기본 시급 대비 수당 배율 (예: 1.0, 1.25, 1.5)
 
   ShiftPreset({
     required this.id,
@@ -15,6 +17,7 @@ class ShiftPreset {
     required this.startTime,
     required this.endTime,
     required this.breakTimeMinutes,
+    this.payMultiplier = 1.0, // 기본값은 1배수(수당 없음)
   });
 
   Map<String, dynamic> toMap() {
@@ -26,6 +29,7 @@ class ShiftPreset {
       'endHour': endTime.hour,
       'endMinute': endTime.minute,
       'breakTimeMinutes': breakTimeMinutes,
+      'payMultiplier': payMultiplier,
     };
   }
 
@@ -42,6 +46,7 @@ class ShiftPreset {
         minute: map['endMinute']?.toInt() ?? 0,
       ),
       breakTimeMinutes: map['breakTimeMinutes']?.toInt() ?? 0,
+      payMultiplier: map['payMultiplier']?.toDouble() ?? 1.0,
     );
   }
 
