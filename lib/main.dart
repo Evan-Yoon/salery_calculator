@@ -24,7 +24,6 @@ class MyApp extends StatelessWidget {
           colorScheme: ColorScheme.fromSeed(
             seedColor: const Color(0xFF2B8CEE),
             brightness: Brightness.light,
-            background: const Color(0xFFF6F7F8),
             surface: const Color(0xFFFFFFFF),
           ),
           scaffoldBackgroundColor: const Color(0xFFF6F7F8),
@@ -35,7 +34,6 @@ class MyApp extends StatelessWidget {
           colorScheme: ColorScheme.fromSeed(
             seedColor: const Color(0xFF2B8CEE),
             brightness: Brightness.dark,
-            background: const Color(0xFF111A22),
             surface: const Color(0xFF1C2A38),
           ),
           scaffoldBackgroundColor: const Color(0xFF111A22),
@@ -43,7 +41,7 @@ class MyApp extends StatelessWidget {
             backgroundColor: Color(0xFF111A22),
             surfaceTintColor: Colors.transparent,
           ),
-          cardTheme: const CardTheme(color: Color(0xFF1C2A38)),
+          cardTheme: const CardThemeData(color: Color(0xFF1C2A38)),
         ),
         themeMode:
             ThemeMode.dark, // Default to dark as per user preference/screens
