@@ -33,6 +33,7 @@ class _StatisticsPageState extends State<StatisticsPage> {
         builder: (context, provider, child) {
           final shifts = provider.shifts;
           final bonuses = provider.bonuses;
+          final taxRate = provider.taxRate;
 
           if (shifts.isEmpty && bonuses.isEmpty) {
             return const Center(
@@ -46,9 +47,9 @@ class _StatisticsPageState extends State<StatisticsPage> {
             children: [
               _buildViewToggler(),
               const SizedBox(height: 24),
-              _buildBarChart(shifts, bonuses),
+              _buildBarChart(shifts, bonuses, taxRate),
               const SizedBox(height: 24),
-              _buildIncomeRatioChart(shifts, bonuses),
+              _buildIncomeRatioChart(shifts, bonuses, taxRate),
               const SizedBox(height: 24),
               _buildFunFacts(shifts),
               const SizedBox(height: 24),
@@ -106,10 +107,12 @@ class _StatisticsPageState extends State<StatisticsPage> {
   }
 
   // [STUDY NOTE]: fl_chart 패키지를 사용해 데이터를 막대그래프(Bar Chart)로 시각화합니다.
-  Widget _buildBarChart(List<ShiftEntry> shifts, List<BonusEntry> bonuses) {
-    // 1. 데이터 집계하기
+  Widget _buildBarChart(
+      List<ShiftEntry> shifts, List<BonusEntry> bonuses, double taxRate) {
+    // 1. 데이터 집계하기 (세금 공제 후 순수익 기준)
     Map<String, double> dataMap = {};
     DateTime now = DateTime.now();
+    final double multiplier = 1.0 - taxRate;
 
     if (_selectedViewIndex == 0) {
       // 월별 (최근 6개월)
@@ -121,13 +124,13 @@ class _StatisticsPageState extends State<StatisticsPage> {
         for (var s in shifts) {
           if (s.startTime.year == monthDate.year &&
               s.startTime.month == monthDate.month) {
-            monthTotal += s.totalPay;
+            monthTotal += s.totalPay * multiplier;
           }
         }
         for (var b in bonuses) {
           if (b.date.year == monthDate.year &&
               b.date.month == monthDate.month) {
-            monthTotal += b.amount;
+            monthTotal += b.amount * multiplier;
           }
         }
         dataMap[label] = monthTotal;
@@ -143,14 +146,14 @@ class _StatisticsPageState extends State<StatisticsPage> {
           if (s.startTime.year == dayDate.year &&
               s.startTime.month == dayDate.month &&
               s.startTime.day == dayDate.day) {
-            dayTotal += s.totalPay;
+            dayTotal += s.totalPay * multiplier;
           }
         }
         for (var b in bonuses) {
           if (b.date.year == dayDate.year &&
               b.date.month == dayDate.month &&
               b.date.day == dayDate.day) {
-            dayTotal += b.amount;
+            dayTotal += b.amount * multiplier;
           }
         }
         dataMap[label] = dayTotal;
@@ -257,13 +260,16 @@ class _StatisticsPageState extends State<StatisticsPage> {
 
   // [STUDY NOTE]: 일한 돈(근로 소득)과 추가로 받은 돈(상여금)의 비율을 보여주는 원형(Pie) 차트입니다.
   Widget _buildIncomeRatioChart(
-      List<ShiftEntry> shifts, List<BonusEntry> bonuses) {
+      List<ShiftEntry> shifts, List<BonusEntry> bonuses, double taxRate) {
     if (shifts.isEmpty && bonuses.isEmpty) {
       return const SizedBox();
     }
 
-    final shiftTotal = shifts.fold(0.0, (sum, s) => sum + s.totalPay);
-    final bonusTotal = bonuses.fold(0.0, (sum, b) => sum + b.amount);
+    final multiplier = 1.0 - taxRate;
+    final shiftTotal =
+        shifts.fold(0.0, (sum, s) => sum + s.totalPay * multiplier);
+    final bonusTotal =
+        bonuses.fold(0.0, (sum, b) => sum + b.amount * multiplier);
     final total = shiftTotal + bonusTotal;
 
     if (total == 0) {

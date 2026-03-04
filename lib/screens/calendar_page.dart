@@ -41,7 +41,8 @@ class _CalendarPageState extends State<CalendarPage> {
               _buildCalendar(provider),
               const Divider(color: Colors.white10),
               Expanded(
-                child: _buildDailyDetails(selectedShifts, selectedBonuses),
+                child: _buildDailyDetails(
+                    selectedShifts, selectedBonuses, provider.taxRate),
               ),
             ],
           );
@@ -105,7 +106,8 @@ class _CalendarPageState extends State<CalendarPage> {
   }
 
   // [STUDY NOTE]: 특정 날짜의 근무 및 상여금 리스트, 일일 요약을 보여줍니다.
-  Widget _buildDailyDetails(List<ShiftEntry> shifts, List<BonusEntry> bonuses) {
+  Widget _buildDailyDetails(
+      List<ShiftEntry> shifts, List<BonusEntry> bonuses, double taxRate) {
     if (shifts.isEmpty && bonuses.isEmpty) {
       return const Center(
         child: Text('이 날의 근무 또는 수입 기록이 없습니다.',
@@ -113,8 +115,11 @@ class _CalendarPageState extends State<CalendarPage> {
       );
     }
 
-    final double dailyShiftPay = shifts.fold(0.0, (sum, s) => sum + s.totalPay);
-    final double dailyBonusPay = bonuses.fold(0.0, (sum, b) => sum + b.amount);
+    final multiplier = 1.0 - taxRate;
+    final double dailyShiftPay =
+        shifts.fold(0.0, (sum, s) => sum + s.totalPay * multiplier);
+    final double dailyBonusPay =
+        bonuses.fold(0.0, (sum, b) => sum + b.amount * multiplier);
     final double dailyTotalPay = dailyShiftPay + dailyBonusPay;
 
     final double dailyNetHours = shifts.fold(0.0, (sum, s) {
@@ -141,7 +146,7 @@ class _CalendarPageState extends State<CalendarPage> {
             children: [
               _buildSummaryItem('근무 시간', '${dailyNetHours.toStringAsFixed(1)}h',
                   Icons.schedule, Colors.blue),
-              _buildSummaryItem('알바 수익', '₩${formatter.format(dailyShiftPay)}',
+              _buildSummaryItem('일일 수익', '₩${formatter.format(dailyShiftPay)}',
                   Icons.payments, Colors.green),
               _buildSummaryItem(
                   '총 수익',

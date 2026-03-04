@@ -42,6 +42,9 @@ class _AddShiftPageState extends State<AddShiftPage> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
+                  _buildSectionTitle('근무 프리셋 (빠른 입력)'),
+                  _buildPresetChips(),
+                  const SizedBox(height: 24),
                   _buildSectionTitle('날짜 및 시간'),
                   _buildDateTimeCard(),
                   const SizedBox(height: 24),
@@ -68,6 +71,38 @@ class _AddShiftPageState extends State<AddShiftPage> {
         style: const TextStyle(
             color: Colors.grey, fontSize: 12, fontWeight: FontWeight.bold),
       ),
+    );
+  }
+
+  Widget _buildPresetChips() {
+    final provider = Provider.of<SalaryProvider>(context);
+    final presets = provider.shiftPresets;
+
+    if (presets.isEmpty) return const SizedBox();
+
+    return Wrap(
+      spacing: 8,
+      runSpacing: 8,
+      children: presets.map((preset) {
+        return ActionChip(
+          label: Text(preset.name,
+              style: TextStyle(
+                  color: Theme.of(context).colorScheme.primary,
+                  fontWeight: FontWeight.bold)),
+          backgroundColor:
+              Theme.of(context).colorScheme.primary.withValues(alpha: 0.1),
+          side: BorderSide(
+              color:
+                  Theme.of(context).colorScheme.primary.withValues(alpha: 0.5)),
+          onPressed: () {
+            setState(() {
+              _startTime = preset.startTime;
+              _endTime = preset.endTime;
+              _breakTimeMinutes = preset.breakTimeMinutes;
+            });
+          },
+        );
+      }).toList(),
     );
   }
 
@@ -253,7 +288,7 @@ class _AddShiftPageState extends State<AddShiftPage> {
           Switch(
             value: _isHoliday,
             onChanged: (val) => setState(() => _isHoliday = val),
-            activeColor: Theme.of(context).colorScheme.primary,
+            activeThumbColor: Theme.of(context).colorScheme.primary,
           ),
         ],
       ),
@@ -285,7 +320,7 @@ class _AddShiftPageState extends State<AddShiftPage> {
         border: const Border(top: BorderSide(color: Colors.white10)),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.2),
+            color: Colors.black.withValues(alpha: 0.2),
             blurRadius: 20,
             offset: const Offset(0, -5),
           )
@@ -376,10 +411,11 @@ class _AddShiftPageState extends State<AddShiftPage> {
     );
     if (picked != null) {
       setState(() {
-        if (isStart)
+        if (isStart) {
           _startTime = picked;
-        else
+        } else {
           _endTime = picked;
+        }
       });
     }
   }
@@ -405,6 +441,7 @@ class _AddShiftPageState extends State<AddShiftPage> {
       breakTimeMinutes: _breakTimeMinutes,
       isHoliday: _isHoliday,
       hourlyWage: provider.hourlyWage,
+      isFiveOrMoreEmployees: provider.isFiveOrMoreEmployees,
     );
 
     final entry = ShiftEntry(

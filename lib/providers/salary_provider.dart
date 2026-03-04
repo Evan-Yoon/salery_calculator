@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../models/shift_entry.dart';
 import '../models/bonus_entry.dart';
+import '../models/shift_preset.dart';
 
 // [STUDY NOTE]: SalaryProvider는 앱 전체의 상태(근무 기록 리스트, 시급 설정 등)를 관리하는 역할을 합니다.
 // ChangeNotifier를 믹스인(with)으로 사용하여, 데이터가 변경될 때마다 화면을 새로고침하도록 알림을 줍니다.
@@ -13,10 +14,37 @@ class SalaryProvider with ChangeNotifier {
   List<BonusEntry> _bonuses = [];
   double _hourlyWage = 10320.0; // 2024년 기준 최저시급 등 기본값
 
+  // [STUDY NOTE]: 앱 확장을 위한 새로운 전역 설정값들입니다. (프리셋, 5인 이상 여부, 세금)
+  List<ShiftPreset> _shiftPresets = [
+    ShiftPreset(
+        id: 'default_day',
+        name: '데이(Day)',
+        startTime: const TimeOfDay(hour: 7, minute: 0),
+        endTime: const TimeOfDay(hour: 15, minute: 0),
+        breakTimeMinutes: 60),
+    ShiftPreset(
+        id: 'default_eve',
+        name: '이브닝(Eve)',
+        startTime: const TimeOfDay(hour: 15, minute: 0),
+        endTime: const TimeOfDay(hour: 23, minute: 0),
+        breakTimeMinutes: 60),
+    ShiftPreset(
+        id: 'default_night',
+        name: '나이트(Night)',
+        startTime: const TimeOfDay(hour: 23, minute: 0),
+        endTime: const TimeOfDay(hour: 7, minute: 0),
+        breakTimeMinutes: 60),
+  ];
+  bool _isFiveOrMoreEmployees = false;
+  double _taxRate = 0.0; // 0.0(세금 없음), 0.033(프리랜서), 0.094(4대보험)
+
   // [STUDY NOTE]: 외부에서 데이터를 가져다 쓸 수 있도록 열어둔 getter 함수입니다. 외부에서는 데이터를 직접 변경할 수 없습니다.
   List<ShiftEntry> get shifts => _shifts;
   List<BonusEntry> get bonuses => _bonuses;
   double get hourlyWage => _hourlyWage;
+  List<ShiftPreset> get shiftPresets => _shiftPresets;
+  bool get isFiveOrMoreEmployees => _isFiveOrMoreEmployees;
+  double get taxRate => _taxRate;
 
   // [STUDY NOTE]: 등록된 모든 근무 기록의 총 급여와 비정기 급여를 합산하여 반환하는 Getter
   double get totalSalary {
@@ -47,8 +75,21 @@ class SalaryProvider with ChangeNotifier {
   Future<void> loadData() async {
     final prefs = await SharedPreferences.getInstance();
 
-    // 시급 설정 가져오기 (저장된 값이 없으면 10320.0 반환)
+    // 시급 및 전역 설정 가져오기
     _hourlyWage = prefs.getDouble('hourlyWage') ?? 10320.0;
+    _isFiveOrMoreEmployees = prefs.getBool('isFiveOrMoreEmployees') ?? false;
+    _taxRate = prefs.getDouble('taxRate') ?? 0.0;
+
+    // 근무 프리셋 가져오기
+    final String? presetsString = prefs.getString('shiftPresets');
+    if (presetsString != null) {
+      try {
+        final List<dynamic> decoded = jsonDecode(presetsString);
+        _shiftPresets = decoded.map((e) => ShiftPreset.fromMap(e)).toList();
+      } catch (e) {
+        debugPrint('Error loading presets: $e');
+      }
+    }
 
     // 근무 기록 가져오기 (저장된 리스트 형태의 텍스트가 있는지 확인)
     final String? shiftsString = prefs.getString('shifts');
@@ -82,6 +123,10 @@ class SalaryProvider with ChangeNotifier {
   Future<void> saveData() async {
     final prefs = await SharedPreferences.getInstance();
     prefs.setDouble('hourlyWage', _hourlyWage);
+    prefs.setBool('isFiveOrMoreEmployees', _isFiveOrMoreEmployees);
+    prefs.setDouble('taxRate', _taxRate);
+    prefs.setString('shiftPresets',
+        jsonEncode(_shiftPresets.map((e) => e.toMap()).toList()));
 
     // [STUDY NOTE]: 시프트 리스트를 JSON 텍스트로 변환하여 저장합니다.
     final String shiftsString =
@@ -129,5 +174,27 @@ class SalaryProvider with ChangeNotifier {
     _hourlyWage = wage;
     saveData();
     notifyListeners();
+  }
+
+  void setIsFiveOrMoreEmployees(bool value) {
+    _isFiveOrMoreEmployees = value;
+    saveData();
+    notifyListeners();
+  }
+
+  void setTaxRate(double rate) {
+    _taxRate = rate;
+    saveData();
+    notifyListeners();
+  }
+
+  // [STUDY NOTE]: 설정 페이지에서 사용자가 프리셋 시간이나 이름을 변경할 때 호출되는 함수입니다.
+  void updateShiftPreset(ShiftPreset updatedPreset) {
+    final index = _shiftPresets.indexWhere((p) => p.id == updatedPreset.id);
+    if (index != -1) {
+      _shiftPresets[index] = updatedPreset;
+      saveData();
+      notifyListeners();
+    }
   }
 }

@@ -118,6 +118,8 @@ class _HomePageState extends State<HomePage> {
           return sum + (netMins > 0 ? netMins / 60.0 : 0.0);
         });
 
+        final double netSalary = totalSalary * (1.0 - provider.taxRate);
+
         final formatter = NumberFormat('#,###');
 
         return Container(
@@ -129,24 +131,32 @@ class _HomePageState extends State<HomePage> {
               border: Border.all(color: Colors.white10),
               boxShadow: [
                 BoxShadow(
-                  color: Colors.black.withOpacity(0.1),
+                  color: Colors.black.withValues(alpha: 0.1),
                   blurRadius: 10,
                   offset: const Offset(0, 4),
                 )
               ]),
           child: Column(
             children: [
-              const Text('총 예상 급여',
+              const Text('이번 달 총 예상 급여 (실수령액)',
                   style: TextStyle(color: Colors.grey, fontSize: 14)),
               const SizedBox(height: 8),
               Text(
-                '₩${formatter.format(totalSalary.round())}',
+                '₩${formatter.format(netSalary.round())}',
                 style: TextStyle(
                   fontSize: 32,
                   fontWeight: FontWeight.w800,
                   color: Theme.of(context).colorScheme.primary,
                 ),
               ),
+              if (provider.taxRate > 0)
+                Padding(
+                  padding: const EdgeInsets.only(top: 8),
+                  child: Text(
+                    '세전 ₩${formatter.format(totalSalary.round())} (-${(provider.taxRate * 100).toStringAsFixed(1)}% 세금 적용)',
+                    style: const TextStyle(color: Colors.grey, fontSize: 12),
+                  ),
+                ),
               const SizedBox(height: 16),
               Container(
                 padding:
@@ -256,7 +266,7 @@ class _HomePageState extends State<HomePage> {
                     Container(
                       padding: const EdgeInsets.all(10),
                       decoration: BoxDecoration(
-                        color: iconColor.withOpacity(0.1),
+                        color: iconColor.withValues(alpha: 0.1),
                         borderRadius: BorderRadius.circular(12),
                       ),
                       child: Icon(icon, color: iconColor),
@@ -279,7 +289,7 @@ class _HomePageState extends State<HomePage> {
                                 padding: const EdgeInsets.symmetric(
                                     horizontal: 6, vertical: 2),
                                 decoration: BoxDecoration(
-                                  color: tagColor.withOpacity(0.2),
+                                  color: tagColor.withValues(alpha: 0.2),
                                   borderRadius: BorderRadius.circular(4),
                                 ),
                                 child: Text(tag,

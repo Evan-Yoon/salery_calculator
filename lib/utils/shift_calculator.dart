@@ -8,6 +8,7 @@ class ShiftCalculator {
     required int breakTimeMinutes,
     required bool isHoliday,
     required double hourlyWage,
+    required bool isFiveOrMoreEmployees,
   }) {
     // 1. 총 근무 시간 계산
     Duration totalDuration = endTime.difference(startTime);
@@ -22,25 +23,26 @@ class ShiftCalculator {
     double basePayRate = isHoliday ? hourlyWage * 1.5 : hourlyWage;
     double basePay = netHours * basePayRate;
 
-    // 4. 야간 근무 수당 (22:00 ~ 06:00) - 0.5배 추가 지급
-    // 기본급에 1.0배가 포함되어 있으므로 여기서는 0.5배만 추가합니다.
-    // (참고: 휴일 근무로 인해 기본급이 1.5배인 경우, 야간 수당은 원래 시급의 0.5배입니다.
-    // 즉 총 2.0배가 됩니다. 근로기준법: 휴일(1.5) + 야간(0.5) = 2.0배. 정상 적용됩니다.)
+    // 4. 연장 수당 (하루 8시간 초과분) - 5인 이상 사업장 적용
+    double overtimeHours = 0.0;
+    if (isFiveOrMoreEmployees && netHours > 8.0) {
+      overtimeHours = netHours - 8.0;
+    }
+    double overtimeAllowance = overtimeHours * hourlyWage * 0.5;
 
+    // 5. 야간 근무 수당 (22:00 ~ 06:00) - 5인 이상 사업장 적용
+    // 기본급에 1.0배가 포함되어 있으므로 여기서는 0.5배만 추가합니다.
     double nightHours = _calculateNightOverlapHours(startTime, endTime);
 
     // 안전 장치: 야간 근로 시간이 실제 순 근무 시간을 초과할 수 없음.
-    // 보통 휴게 시간이 차감되는데, 휴식 시간이 언제였는지 알 수 없다면
-    // 엄격하게 계산하기 어렵습니다.
-    // 하지만 만약 실제 근무 시간 < 야간 근로 시간이라면 (예: 8시간 야간 근무, 8시간 휴식)
-    // 수당을 0으로 만들어야 합니다. 만약을 대비해 야간 근로 시간을 실제 근무 시간으로 제한합니다.
     if (nightHours > netHours) {
       nightHours = netHours;
     }
 
-    double nightAllowance = nightHours * hourlyWage * 0.5;
+    double nightAllowance =
+        isFiveOrMoreEmployees ? nightHours * hourlyWage * 0.5 : 0.0;
 
-    return basePay + nightAllowance;
+    return basePay + overtimeAllowance + nightAllowance;
   }
 
   // [STUDY NOTE]: 밤 10시(22:00)부터 다음 날 아침 6시(06:00) 사이에 근무한 '야간 근로 시간'만을 추려내는 내부용(private) 함수입니다.
