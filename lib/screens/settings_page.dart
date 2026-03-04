@@ -14,6 +14,7 @@ class SettingsPage extends StatefulWidget {
 class _SettingsPageState extends State<SettingsPage> {
   final TextEditingController _wageController = TextEditingController();
 
+  String _wageType = '시급';
   bool _includeWeeklyHoliday = true;
   bool _isFiveOrMoreEmployees = false;
   bool _applyInsurance = true;
@@ -83,18 +84,34 @@ class _SettingsPageState extends State<SettingsPage> {
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                const Column(
+                Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text('시급 설정', style: TextStyle(fontSize: 16)),
-                    Text('기본 시급을 입력하세요',
+                    DropdownButton<String>(
+                      value: _wageType,
+                      underline: const SizedBox(),
+                      icon:
+                          const Icon(Icons.arrow_drop_down, color: Colors.grey),
+                      style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                          color: Theme.of(context).textTheme.bodyLarge?.color),
+                      items: ['시급', '월급', '연봉'].map((String value) {
+                        return DropdownMenuItem<String>(
+                          value: value,
+                          child: Text(value),
+                        );
+                      }).toList(),
+                      onChanged: _onWageTypeChanged,
+                    ),
+                    const Text('금액을 입력하세요',
                         style: TextStyle(fontSize: 12, color: Colors.grey)),
                   ],
                 ),
                 Row(
                   children: [
                     SizedBox(
-                      width: 100,
+                      width: 140,
                       child: TextField(
                         controller: _wageController,
                         keyboardType: TextInputType.number,
@@ -139,13 +156,38 @@ class _SettingsPageState extends State<SettingsPage> {
     );
   }
 
+  void _onWageTypeChanged(String? newValue) {
+    if (newValue == null || newValue == _wageType) return;
+
+    final provider = Provider.of<SalaryProvider>(context, listen: false);
+    final currentHourlyWage = provider.hourlyWage;
+
+    double displayValue = currentHourlyWage;
+    if (newValue == '월급') {
+      displayValue = currentHourlyWage * 209.0;
+    } else if (newValue == '연봉') {
+      displayValue = currentHourlyWage * 209.0 * 12.0;
+    }
+
+    setState(() {
+      _wageType = newValue;
+      _wageController.text = displayValue.toInt().toString();
+    });
+  }
+
   // [STUDY NOTE]: 사용자가 텍스트 필드에 시급을 입력할 때마다 호출되어, Provider에 새 시급을 저장하는 함수입니다.
   void _saveWage() {
     final provider = Provider.of<SalaryProvider>(context, listen: false);
-    final double? wage =
+    final double? inputValue =
         double.tryParse(_wageController.text.replaceAll(',', ''));
-    if (wage != null) {
-      provider.setHourlyWage(wage);
+    if (inputValue != null) {
+      double hourlyWage = inputValue;
+      if (_wageType == '월급') {
+        hourlyWage = inputValue / 209.0;
+      } else if (_wageType == '연봉') {
+        hourlyWage = inputValue / (209.0 * 12.0);
+      }
+      provider.setHourlyWage(hourlyWage);
     }
   }
 
