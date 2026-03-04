@@ -38,6 +38,10 @@ class SalaryProvider with ChangeNotifier {
   bool _isFiveOrMoreEmployees = false;
   double _taxRate = 0.0; // 0.0(세금 없음), 0.033(프리랜서), 0.094(4대보험)
 
+  // [STUDY NOTE]: Phase 2: 온보딩 기능 도입 (교대 근무자 vs 고정 시간 근무자)
+  bool _isShiftWorker = true;
+  bool _hasCompletedOnboarding = false;
+
   // [STUDY NOTE]: 외부에서 데이터를 가져다 쓸 수 있도록 열어둔 getter 함수입니다. 외부에서는 데이터를 직접 변경할 수 없습니다.
   List<ShiftEntry> get shifts => _shifts;
   List<BonusEntry> get bonuses => _bonuses;
@@ -45,6 +49,8 @@ class SalaryProvider with ChangeNotifier {
   List<ShiftPreset> get shiftPresets => _shiftPresets;
   bool get isFiveOrMoreEmployees => _isFiveOrMoreEmployees;
   double get taxRate => _taxRate;
+  bool get isShiftWorker => _isShiftWorker;
+  bool get hasCompletedOnboarding => _hasCompletedOnboarding;
 
   // [STUDY NOTE]: 등록된 모든 근무 기록의 총 급여와 비정기 급여를 합산하여 반환하는 Getter
   double get totalSalary {
@@ -79,6 +85,8 @@ class SalaryProvider with ChangeNotifier {
     _hourlyWage = prefs.getDouble('hourlyWage') ?? 10320.0;
     _isFiveOrMoreEmployees = prefs.getBool('isFiveOrMoreEmployees') ?? false;
     _taxRate = prefs.getDouble('taxRate') ?? 0.0;
+    _isShiftWorker = prefs.getBool('isShiftWorker') ?? true;
+    _hasCompletedOnboarding = prefs.getBool('hasCompletedOnboarding') ?? false;
 
     // 근무 프리셋 가져오기
     final String? presetsString = prefs.getString('shiftPresets');
@@ -125,6 +133,8 @@ class SalaryProvider with ChangeNotifier {
     prefs.setDouble('hourlyWage', _hourlyWage);
     prefs.setBool('isFiveOrMoreEmployees', _isFiveOrMoreEmployees);
     prefs.setDouble('taxRate', _taxRate);
+    prefs.setBool('isShiftWorker', _isShiftWorker);
+    prefs.setBool('hasCompletedOnboarding', _hasCompletedOnboarding);
     prefs.setString('shiftPresets',
         jsonEncode(_shiftPresets.map((e) => e.toMap()).toList()));
 
@@ -184,6 +194,14 @@ class SalaryProvider with ChangeNotifier {
 
   void setTaxRate(double rate) {
     _taxRate = rate;
+    saveData();
+    notifyListeners();
+  }
+
+  // [STUDY NOTE]: 온보딩 화면에서 근무 형태(교대 근무 여부)를 설정할 때 호출됩니다.
+  void setWorkerType(bool isShiftWorker) {
+    _isShiftWorker = isShiftWorker;
+    _hasCompletedOnboarding = true;
     saveData();
     notifyListeners();
   }

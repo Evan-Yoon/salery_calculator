@@ -33,6 +33,8 @@ class _SettingsPageState extends State<SettingsPage> {
 
   @override
   Widget build(BuildContext context) {
+    final provider = Provider.of<SalaryProvider>(context);
+
     return Scaffold(
       appBar: AppBar(
         title: const Text('설정', style: TextStyle(fontWeight: FontWeight.bold)),
@@ -45,9 +47,14 @@ class _SettingsPageState extends State<SettingsPage> {
           _buildSectionHeader('급여 기준'),
           _buildWageCard(),
           const SizedBox(height: 24),
-          _buildSectionHeader('근무 프리셋 시간 설정 (데이/이브/나이트)'),
-          _buildPresetsSection(),
-          const SizedBox(height: 24),
+
+          // [STUDY NOTE]: 교대 근무자에게만 프리셋 시간 설정 메뉴를 보여줍니다.
+          if (provider.isShiftWorker) ...[
+            _buildSectionHeader('근무 프리셋 시간 설정 (데이/이브/나이트)'),
+            _buildPresetsSection(),
+            const SizedBox(height: 24),
+          ],
+
           _buildSectionHeader('나의 시급/월급 계산기 (2026년 기준)'),
           _buildCalculatorCard(),
           const SizedBox(height: 24),

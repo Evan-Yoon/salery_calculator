@@ -4,7 +4,8 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'providers/salary_provider.dart';
-import 'screens/home_page.dart';
+import 'screens/onboarding_page.dart';
+import 'widgets/main_bottom_nav.dart';
 
 // [STUDY NOTE]: main() 함수는 Dart 프로그램의 시작점입니다.
 // runApp()을 호출하여 앱의 루트 위젯을 화면에 그립니다.
@@ -69,8 +70,18 @@ class MyApp extends StatelessWidget {
         // [STUDY NOTE]: 앱에서 지원하는 언어를 설정합니다 (한국어, 영어).
         supportedLocales: const [Locale('ko', 'KR'), Locale('en', 'US')],
 
-        // [STUDY NOTE]: 앱을 시작했을 때 가장 먼저 보여줄 화면입니다.
-        home: const HomePage(),
+        // [STUDY NOTE]: 앱을 시작했을 때 가장 먼저 보여줄 화면을 결정합니다.
+        // Consumer를 통해 SalaryProvider의 데이터를 언제든 읽어올 수 있습니다.
+        home: Consumer<SalaryProvider>(
+          builder: (context, provider, child) {
+            // [STUDY NOTE]: 기존 유저이거나 온보딩을 완료한 경우 메인 화면(BottomNav)으로 이동하고, 처음인 경우 온보딩 배치를 보여줍니다.
+            if (provider.hasCompletedOnboarding) {
+              return const MainBottomNav(currentIndex: 0);
+            } else {
+              return const OnboardingPage();
+            }
+          },
+        ),
       ),
     );
   }

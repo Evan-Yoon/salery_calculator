@@ -1,9 +1,9 @@
-import 'package:flutter/material.dart';
-import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 import '../providers/salary_provider.dart';
 import '../models/shift_entry.dart';
 import '../utils/shift_calculator.dart';
+import '../widgets/add_shift/preset_chips.dart';
+import '../widgets/add_shift/date_time_card.dart';
 
 // [STUDY NOTE]: StatefulWidget은 화면의 상태(데이터)가 변할 때마다 화면을 다시 그릴 수 있는 위젯입니다.
 // 이 페이지는 사용자가 입력하는 날짜, 시간 등의 '상태'가 계속 변하므로 StatefulWidget을 사용합니다.
@@ -43,11 +43,28 @@ class _AddShiftPageState extends State<AddShiftPage> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  _buildSectionTitle('근무 프리셋 (빠른 입력)'),
-                  _buildPresetChips(),
-                  const SizedBox(height: 24),
+                  if (Provider.of<SalaryProvider>(context).isShiftWorker)
+                    _buildSectionTitle('근무 프리셋 (빠른 입력)'),
+                  PresetChips(
+                    onPresetSelected: (start, end, breakMins, multiplier) {
+                      setState(() {
+                        _startTime = start;
+                        _endTime = end;
+                        _breakTimeMinutes = breakMins;
+                        _payMultiplier = multiplier;
+                      });
+                    },
+                  ),
+                  if (Provider.of<SalaryProvider>(context).isShiftWorker)
+                    const SizedBox(height: 24),
                   _buildSectionTitle('날짜 및 시간'),
-                  _buildDateTimeCard(),
+                  DateTimeCard(
+                    selectedDate: _selectedDate,
+                    startTime: _startTime,
+                    endTime: _endTime,
+                    onPickDate: _pickDate,
+                    onPickTime: _pickTime,
+                  ),
                   const SizedBox(height: 24),
                   _buildSectionTitle('휴게 시간 (분)'),
                   _buildBreakTimeCard(),
@@ -71,133 +88,6 @@ class _AddShiftPageState extends State<AddShiftPage> {
         title,
         style: const TextStyle(
             color: Colors.grey, fontSize: 12, fontWeight: FontWeight.bold),
-      ),
-    );
-  }
-
-  Widget _buildPresetChips() {
-    final provider = Provider.of<SalaryProvider>(context);
-    final presets = provider.shiftPresets;
-
-    if (presets.isEmpty) return const SizedBox();
-
-    return Wrap(
-      spacing: 8,
-      runSpacing: 8,
-      children: presets.map((preset) {
-        return ActionChip(
-          label: Text(preset.name,
-              style: TextStyle(
-                  color: Theme.of(context).colorScheme.primary,
-                  fontWeight: FontWeight.bold)),
-          backgroundColor:
-              Theme.of(context).colorScheme.primary.withValues(alpha: 0.1),
-          side: BorderSide(
-              color:
-                  Theme.of(context).colorScheme.primary.withValues(alpha: 0.5)),
-          onPressed: () {
-            setState(() {
-              _startTime = preset.startTime;
-              _endTime = preset.endTime;
-              _breakTimeMinutes = preset.breakTimeMinutes;
-              _payMultiplier = preset.payMultiplier;
-            });
-          },
-        );
-      }).toList(),
-    );
-  }
-
-  // [STUDY NOTE]: 날짜와 시간을 선택하는 UI 카드를 만드는 함수입니다. UI 코드가 너무 길어지는 것을 막기 위해 별도의 함수로 분리했습니다.
-  Widget _buildDateTimeCard() {
-    return Container(
-      decoration: BoxDecoration(
-        color: Theme.of(context).cardTheme.color,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: Colors.white10),
-      ),
-      child: Column(
-        children: [
-          // 날짜 선택기
-          InkWell(
-            onTap: _pickDate,
-            borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
-            child: Padding(
-              padding: const EdgeInsets.all(16),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  const Text('날짜 선택', style: TextStyle(fontSize: 16)),
-                  Row(
-                    children: [
-                      Text(
-                        DateFormat('yyyy.MM.dd (E)', 'ko_KR')
-                            .format(_selectedDate),
-                        style: TextStyle(
-                            fontSize: 16,
-                            fontWeight: FontWeight.bold,
-                            color: Theme.of(context).colorScheme.primary),
-                      ),
-                      const SizedBox(width: 8),
-                      Icon(Icons.calendar_month,
-                          size: 20,
-                          color: Theme.of(context).colorScheme.primary),
-                    ],
-                  ),
-                ],
-              ),
-            ),
-          ),
-          const Divider(height: 1, color: Colors.white10),
-          // 시간 선택기
-          Row(
-            children: [
-              Expanded(
-                child: InkWell(
-                  onTap: () => _pickTime(true),
-                  child: Padding(
-                    padding: const EdgeInsets.all(16),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        const Text('시작 시간',
-                            style: TextStyle(color: Colors.grey, fontSize: 12)),
-                        const SizedBox(height: 4),
-                        Text(
-                          _startTime.format(context),
-                          style: const TextStyle(
-                              fontSize: 18, fontWeight: FontWeight.bold),
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-              ),
-              Container(width: 1, height: 60, color: Colors.white10),
-              Expanded(
-                child: InkWell(
-                  onTap: () => _pickTime(false),
-                  child: Padding(
-                    padding: const EdgeInsets.all(16),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        const Text('종료 시간',
-                            style: TextStyle(color: Colors.grey, fontSize: 12)),
-                        const SizedBox(height: 4),
-                        Text(
-                          _endTime.format(context),
-                          style: const TextStyle(
-                              fontSize: 18, fontWeight: FontWeight.bold),
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-              ),
-            ],
-          ),
-        ],
       ),
     );
   }
@@ -269,6 +159,8 @@ class _AddShiftPageState extends State<AddShiftPage> {
   }
 
   Widget _buildOptionsCard() {
+    final provider = Provider.of<SalaryProvider>(context);
+
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
       decoration: BoxDecoration(
@@ -279,36 +171,38 @@ class _AddShiftPageState extends State<AddShiftPage> {
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const Text('수당 배율', style: TextStyle(fontSize: 16)),
-                const Text('근무 조에 따른 배율 (1.0 = 배율 없음)',
-                    style: TextStyle(color: Colors.grey, fontSize: 12)),
-                const SizedBox(height: 8),
-                Row(
-                  children: [
-                    IconButton(
-                      icon: const Icon(Icons.remove_circle_outline),
-                      onPressed: () => setState(() {
-                        if (_payMultiplier > 1.0) _payMultiplier -= 0.05;
-                      }),
-                    ),
-                    Text('${_payMultiplier.toStringAsFixed(2)}배',
-                        style: const TextStyle(
-                            fontWeight: FontWeight.bold, fontSize: 16)),
-                    IconButton(
-                      icon: const Icon(Icons.add_circle_outline),
-                      onPressed: () => setState(() {
-                        _payMultiplier += 0.05;
-                      }),
-                    ),
-                  ],
-                ),
-              ],
+          // [STUDY NOTE]: 교대 근무자에게만 '수당 배율' 조절 UI를 보여줍니다.
+          if (provider.isShiftWorker)
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text('수당 배율', style: TextStyle(fontSize: 16)),
+                  const Text('근무 조에 따른 배율 (1.0 = 배율 없음)',
+                      style: TextStyle(color: Colors.grey, fontSize: 12)),
+                  const SizedBox(height: 8),
+                  Row(
+                    children: [
+                      IconButton(
+                        icon: const Icon(Icons.remove_circle_outline),
+                        onPressed: () => setState(() {
+                          if (_payMultiplier > 1.0) _payMultiplier -= 0.05;
+                        }),
+                      ),
+                      Text('${_payMultiplier.toStringAsFixed(2)}배',
+                          style: const TextStyle(
+                              fontWeight: FontWeight.bold, fontSize: 16)),
+                      IconButton(
+                        icon: const Icon(Icons.add_circle_outline),
+                        onPressed: () => setState(() {
+                          _payMultiplier += 0.05;
+                        }),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
             ),
-          ),
           Column(
             crossAxisAlignment: CrossAxisAlignment.end,
             children: [
