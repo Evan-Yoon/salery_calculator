@@ -5,6 +5,8 @@ import '../providers/salary_provider.dart';
 import '../models/shift_entry.dart';
 import '../utils/shift_calculator.dart';
 
+// [STUDY NOTE]: StatefulWidget은 화면의 상태(데이터)가 변할 때마다 화면을 다시 그릴 수 있는 위젯입니다.
+// 이 페이지는 사용자가 입력하는 날짜, 시간 등의 '상태'가 계속 변하므로 StatefulWidget을 사용합니다.
 class AddShiftPage extends StatefulWidget {
   const AddShiftPage({super.key});
 
@@ -21,9 +23,11 @@ class _AddShiftPageState extends State<AddShiftPage> {
 
   @override
   Widget build(BuildContext context) {
+    // [STUDY NOTE]: Scaffold는 화면의 기본 뼈대(AppBar, Body 등)를 제공하는 머티리얼 디자인 위젯입니다.
     return Scaffold(
       appBar: AppBar(
-        title: const Text('근무 추가하기', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+        title: const Text('근무 추가하기',
+            style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
         centerTitle: true,
         leading: IconButton(
           icon: const Icon(Icons.arrow_back_ios_new, size: 20),
@@ -61,11 +65,13 @@ class _AddShiftPageState extends State<AddShiftPage> {
       padding: const EdgeInsets.only(left: 4, bottom: 8),
       child: Text(
         title,
-        style: const TextStyle(color: Colors.grey, fontSize: 12, fontWeight: FontWeight.bold),
+        style: const TextStyle(
+            color: Colors.grey, fontSize: 12, fontWeight: FontWeight.bold),
       ),
     );
   }
 
+  // [STUDY NOTE]: 날짜와 시간을 선택하는 UI 카드를 만드는 함수입니다. UI 코드가 너무 길어지는 것을 막기 위해 별도의 함수로 분리했습니다.
   Widget _buildDateTimeCard() {
     return Container(
       decoration: BoxDecoration(
@@ -75,7 +81,7 @@ class _AddShiftPageState extends State<AddShiftPage> {
       ),
       child: Column(
         children: [
-          // Date Picker
+          // 날짜 선택기
           InkWell(
             onTap: _pickDate,
             borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
@@ -88,15 +94,17 @@ class _AddShiftPageState extends State<AddShiftPage> {
                   Row(
                     children: [
                       Text(
-                        DateFormat('yyyy.MM.dd (E)', 'ko_KR').format(_selectedDate),
+                        DateFormat('yyyy.MM.dd (E)', 'ko_KR')
+                            .format(_selectedDate),
                         style: TextStyle(
-                          fontSize: 16, 
-                          fontWeight: FontWeight.bold,
-                          color: Theme.of(context).colorScheme.primary
-                        ),
+                            fontSize: 16,
+                            fontWeight: FontWeight.bold,
+                            color: Theme.of(context).colorScheme.primary),
                       ),
                       const SizedBox(width: 8),
-                      Icon(Icons.calendar_month, size: 20, color: Theme.of(context).colorScheme.primary),
+                      Icon(Icons.calendar_month,
+                          size: 20,
+                          color: Theme.of(context).colorScheme.primary),
                     ],
                   ),
                 ],
@@ -104,7 +112,7 @@ class _AddShiftPageState extends State<AddShiftPage> {
             ),
           ),
           const Divider(height: 1, color: Colors.white10),
-          // Time Pickers
+          // 시간 선택기
           Row(
             children: [
               Expanded(
@@ -115,11 +123,13 @@ class _AddShiftPageState extends State<AddShiftPage> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        const Text('시작 시간', style: TextStyle(color: Colors.grey, fontSize: 12)),
+                        const Text('시작 시간',
+                            style: TextStyle(color: Colors.grey, fontSize: 12)),
                         const SizedBox(height: 4),
                         Text(
                           _startTime.format(context),
-                          style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                          style: const TextStyle(
+                              fontSize: 18, fontWeight: FontWeight.bold),
                         ),
                       ],
                     ),
@@ -135,11 +145,13 @@ class _AddShiftPageState extends State<AddShiftPage> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        const Text('종료 시간', style: TextStyle(color: Colors.grey, fontSize: 12)),
+                        const Text('종료 시간',
+                            style: TextStyle(color: Colors.grey, fontSize: 12)),
                         const SizedBox(height: 4),
                         Text(
                           _endTime.format(context),
-                          style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                          style: const TextStyle(
+                              fontSize: 18, fontWeight: FontWeight.bold),
                         ),
                       ],
                     ),
@@ -184,10 +196,11 @@ class _AddShiftPageState extends State<AddShiftPage> {
                     ),
                     Text(
                       '$_breakTimeMinutes',
-                      style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                      style: const TextStyle(
+                          fontSize: 16, fontWeight: FontWeight.bold),
                     ),
                     IconButton(
-                      icon: const Icon(Icons.add, size: 16), 
+                      icon: const Icon(Icons.add, size: 16),
                       color: Theme.of(context).colorScheme.primary,
                       onPressed: () {
                         setState(() {
@@ -233,7 +246,8 @@ class _AddShiftPageState extends State<AddShiftPage> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text('휴일 근무 여부', style: TextStyle(fontSize: 16)),
-              Text('휴일 수당이 적용됩니다', style: TextStyle(color: Colors.grey, fontSize: 12)),
+              Text('휴일 수당이 적용됩니다',
+                  style: TextStyle(color: Colors.grey, fontSize: 12)),
             ],
           ),
           Switch(
@@ -246,17 +260,20 @@ class _AddShiftPageState extends State<AddShiftPage> {
     );
   }
 
+  // [STUDY NOTE]: 화면 하단에 보이는 실시간 근무 시간 결과와 '저장하기' 버튼 영역을 만듭니다.
   Widget _buildBottomBar() {
-    // Calculate Preview
-    final start = DateTime(_selectedDate.year, _selectedDate.month, _selectedDate.day, _startTime.hour, _startTime.minute);
-    var end = DateTime(_selectedDate.year, _selectedDate.month, _selectedDate.day, _endTime.hour, _endTime.minute);
-    
-    // Handle overnight
+    // 결과 미리 계산
+    final start = DateTime(_selectedDate.year, _selectedDate.month,
+        _selectedDate.day, _startTime.hour, _startTime.minute);
+    var end = DateTime(_selectedDate.year, _selectedDate.month,
+        _selectedDate.day, _endTime.hour, _endTime.minute);
+
+    // 자정(오밤중)을 넘어가는 경우 처리
     if (end.isBefore(start)) {
       end = end.add(const Duration(days: 1));
     }
-    
-    // Net hours
+
+    // 순수 실제 근무 시간
     final totalMins = end.difference(start).inMinutes;
     final netMins = totalMins - _breakTimeMinutes;
     final netHours = (netMins > 0 ? netMins : 0) / 60.0;
@@ -285,22 +302,25 @@ class _AddShiftPageState extends State<AddShiftPage> {
                 Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const Text('예상 급여 계산 시간', style: TextStyle(color: Colors.grey, fontSize: 12)),
-                    Text('휴게 ${(_breakTimeMinutes / 60).toStringAsFixed(1)}시간 제외됨', style: const TextStyle(color: Colors.grey, fontSize: 12)),
+                    const Text('예상 급여 계산 시간',
+                        style: TextStyle(color: Colors.grey, fontSize: 12)),
+                    Text(
+                        '휴게 ${(_breakTimeMinutes / 60).toStringAsFixed(1)}시간 제외됨',
+                        style:
+                            const TextStyle(color: Colors.grey, fontSize: 12)),
                   ],
                 ),
                 Row(
                   children: [
-                     const Text('실제 근무 시간 ', style: TextStyle(color: Colors.grey)),
-                     Text(
-                       '${netHours.toStringAsFixed(1)} ',
-                       style: TextStyle(
-                         fontSize: 24, 
-                         fontWeight: FontWeight.bold,
-                         color: Theme.of(context).colorScheme.primary
-                        )
-                     ),
-                     const Text('시간', style: TextStyle(fontWeight: FontWeight.bold)),
+                    const Text('실제 근무 시간 ',
+                        style: TextStyle(color: Colors.grey)),
+                    Text('${netHours.toStringAsFixed(1)} ',
+                        style: TextStyle(
+                            fontSize: 24,
+                            fontWeight: FontWeight.bold,
+                            color: Theme.of(context).colorScheme.primary)),
+                    const Text('시간',
+                        style: TextStyle(fontWeight: FontWeight.bold)),
                   ],
                 ),
               ],
@@ -314,13 +334,16 @@ class _AddShiftPageState extends State<AddShiftPage> {
                 style: ElevatedButton.styleFrom(
                   backgroundColor: Theme.of(context).colorScheme.primary,
                   foregroundColor: Colors.white,
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                  shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(16)),
                   elevation: 4,
                 ),
                 child: const Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    Text('저장하기', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+                    Text('저장하기',
+                        style: TextStyle(
+                            fontSize: 18, fontWeight: FontWeight.bold)),
                     SizedBox(width: 8),
                     Icon(Icons.check),
                   ],
@@ -353,19 +376,25 @@ class _AddShiftPageState extends State<AddShiftPage> {
     );
     if (picked != null) {
       setState(() {
-        if (isStart) _startTime = picked;
-        else _endTime = picked;
+        if (isStart)
+          _startTime = picked;
+        else
+          _endTime = picked;
       });
     }
   }
 
+  // [STUDY NOTE]: 사용자가 입력한 데이터를 토대로 급여를 계산하고, 객체를 만들어 Provider를 통해 저장하는 핵심 함수입니다.
   void _saveShift() {
+    // [STUDY NOTE]: Provider(상태 관리자)에 접근하여 데이터를 저장할 준비를 합니다. (화면을 새로 그릴 필요는 없으므로 listen: false)
     final provider = Provider.of<SalaryProvider>(context, listen: false);
-    
-    // Construct DateTimes
-    final start = DateTime(_selectedDate.year, _selectedDate.month, _selectedDate.day, _startTime.hour, _startTime.minute);
-    var end = DateTime(_selectedDate.year, _selectedDate.month, _selectedDate.day, _endTime.hour, _endTime.minute);
-    
+
+    // DateTime 객체 조립
+    final start = DateTime(_selectedDate.year, _selectedDate.month,
+        _selectedDate.day, _startTime.hour, _startTime.minute);
+    var end = DateTime(_selectedDate.year, _selectedDate.month,
+        _selectedDate.day, _endTime.hour, _endTime.minute);
+
     if (end.isBefore(start) || end.isAtSameMomentAs(start)) {
       end = end.add(const Duration(days: 1));
     }
@@ -379,7 +408,7 @@ class _AddShiftPageState extends State<AddShiftPage> {
     );
 
     final entry = ShiftEntry(
-      id: DateTime.now().millisecondsSinceEpoch.toString(), // Simple ID
+      id: DateTime.now().millisecondsSinceEpoch.toString(), // 간단한 ID 생성 방식
       date: _selectedDate,
       startTime: start,
       endTime: end,

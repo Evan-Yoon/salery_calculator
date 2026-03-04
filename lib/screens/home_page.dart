@@ -3,8 +3,9 @@ import 'package:provider/provider.dart';
 import 'package:intl/intl.dart';
 import '../providers/salary_provider.dart';
 import 'add_shift_page.dart';
-import 'settings_page.dart';
+import '../widgets/main_bottom_nav.dart';
 
+// [STUDY NOTE]: 앱을 켰을 때 가장 먼저 나오는 메인 대시보드 화면입니다.
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
 
@@ -14,7 +15,6 @@ class HomePage extends StatefulWidget {
 
 class _HomePageState extends State<HomePage> {
   DateTime _currentMonth = DateTime.now();
-  int _currentIndex = 0;
 
   void _changeMonth(int offset) {
     setState(() {
@@ -25,12 +25,7 @@ class _HomePageState extends State<HomePage> {
 
   @override
   Widget build(BuildContext context) {
-    // If current index is Settings (3), show Settings Page
-    if (_currentIndex == 3) {
-      return const SettingsPage();
-    }
-
-    // Otherwise show Home Dashboard
+    // 그렇지 않으면 홈 대시보드를 보여줍니다.
     return Scaffold(
       body: SafeArea(
         child: Column(
@@ -43,7 +38,7 @@ class _HomePageState extends State<HomePage> {
                     _buildSummaryCard(),
                     _buildShiftListHeader(),
                     _buildShiftList(),
-                    const SizedBox(height: 80), // Space for FAB
+                    const SizedBox(height: 80), // 추가 버튼(FAB)을 위한 여백
                   ],
                 ),
               ),
@@ -61,27 +56,7 @@ class _HomePageState extends State<HomePage> {
         backgroundColor: Theme.of(context).colorScheme.primary,
         child: const Icon(Icons.add, color: Colors.white),
       ),
-      bottomNavigationBar: BottomNavigationBar(
-        currentIndex: _currentIndex,
-        onTap: (index) {
-          if (index == 3 || index == 0) {
-            // Only Home and Settings functional for now
-            setState(() => _currentIndex = index);
-          }
-        },
-        type: BottomNavigationBarType.fixed,
-        backgroundColor: Theme.of(context).cardTheme.color,
-        selectedItemColor: Theme.of(context).colorScheme.primary,
-        unselectedItemColor: Colors.grey,
-        showUnselectedLabels: true,
-        items: const [
-          BottomNavigationBarItem(icon: Icon(Icons.home), label: '홈'),
-          BottomNavigationBarItem(
-              icon: Icon(Icons.calendar_month), label: '캘린더'),
-          BottomNavigationBarItem(icon: Icon(Icons.pie_chart), label: '통계'),
-          BottomNavigationBarItem(icon: Icon(Icons.settings), label: '설정'),
-        ],
-      ),
+      bottomNavigationBar: const MainBottomNav(currentIndex: 0),
     );
   }
 
@@ -122,10 +97,12 @@ class _HomePageState extends State<HomePage> {
     );
   }
 
+  // [STUDY NOTE]: 화면 상단의 이번 달 총수입, 근무 시간을 보여주는 요약 카드를 만듭니다.
   Widget _buildSummaryCard() {
+    // [STUDY NOTE]: Consumer는 Provider의 데이터가 변경될 때마다 이 부분의 UI만 콕 집어서 다시 그려주는 역할을 합니다.
     return Consumer<SalaryProvider>(
       builder: (context, provider, child) {
-        // Filter shifts by month
+        // 해당 월에 맞는 근무 기록만 필터링합니다.
         final monthlyShifts = provider.shifts
             .where((s) =>
                 s.startTime.year == _currentMonth.year &&
@@ -134,7 +111,7 @@ class _HomePageState extends State<HomePage> {
 
         final totalSalary =
             monthlyShifts.fold(0.0, (sum, s) => sum + s.totalPay);
-        // Let's use net hours for the dashboard:
+        // 대시보드 표시용으로 순수 실제 근무 시간을 합산합니다:
         final totalNetHours = monthlyShifts.fold(0.0, (sum, s) {
           int netMins =
               s.endTime.difference(s.startTime).inMinutes - s.breakTimeMinutes;
@@ -209,6 +186,7 @@ class _HomePageState extends State<HomePage> {
     );
   }
 
+  // [STUDY NOTE]: 아래에 뜨는 개별 근무 기록(리스트)을 화면에 그리는 함수입니다.
   Widget _buildShiftList() {
     return Consumer<SalaryProvider>(
       builder: (context, provider, child) {
@@ -235,14 +213,14 @@ class _HomePageState extends State<HomePage> {
             final shift = monthlyShifts[index];
             final formatter = NumberFormat('#,###');
 
-            // Determine Icon and Color
+            // 아이콘과 색상 결정
             IconData icon = Icons.wb_sunny;
             Color iconColor = Colors.orange;
             String tag = '주간';
             Color tagColor = Colors.grey;
 
             if (shift.isHoliday) {
-              tag = '특근'; // Holiday work
+              tag = '특근'; // 휴일 수당 적용
               tagColor = Colors.indigo;
               icon = Icons.star;
               iconColor = Colors.indigo;
@@ -253,6 +231,7 @@ class _HomePageState extends State<HomePage> {
               iconColor = Colors.purple;
             }
 
+            // [STUDY NOTE]: 사용자가 항목을 옆으로 밀어(Swipe/Dismiss) 삭제할 수 있게 해주는 기능입니다.
             return Dismissible(
               key: Key(shift.id),
               direction: DismissDirection.endToStart,
