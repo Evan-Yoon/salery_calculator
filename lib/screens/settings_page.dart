@@ -178,6 +178,28 @@ class _SettingsPageState extends State<SettingsPage> {
               ],
             ),
           ),
+          // 최저임금 알림 UI 추가
+          if (_wageType == '시급' && _wageController.text.isNotEmpty)
+            Builder(
+              builder: (context) {
+                final parsed =
+                    int.tryParse(_wageController.text.replaceAll(',', '')) ?? 0;
+                if (parsed > 0 && parsed < 10320) {
+                  return const Padding(
+                    padding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                    child: Align(
+                      alignment: Alignment.centerRight,
+                      child: Text(
+                        '⚠️ 2026년 최저임금(10,320원)보다 낮게 설정되어 있습니다.',
+                        style: TextStyle(color: Colors.orange, fontSize: 13),
+                        textAlign: TextAlign.right,
+                      ),
+                    ),
+                  );
+                }
+                return const SizedBox.shrink();
+              },
+            ),
         ],
       ),
     );

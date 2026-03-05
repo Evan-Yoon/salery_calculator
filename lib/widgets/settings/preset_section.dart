@@ -181,7 +181,7 @@ class PresetSection extends StatelessWidget {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text('수당 배율', style: TextStyle(fontSize: 16)),
-                          Text('1.0배 = 기본 시급',
+                          Text('1.0배 = 기본 시급\n※ 통상임금 기준 가산',
                               style:
                                   TextStyle(color: Colors.grey, fontSize: 12)),
                         ],
@@ -228,6 +228,11 @@ class PresetSection extends StatelessWidget {
                       ),
                     ],
                   ),
+
+                  const SizedBox(height: 16),
+                  const Text(
+                      '※ 주의: 근로기준법 제53조에 따라 당사자 간 합의 시 1주간 12시간을 한도로 근로시간을 연장할 수 있습니다. (주 최대 52시간)',
+                      style: TextStyle(color: Colors.orange, fontSize: 11)),
 
                   const SizedBox(height: 32),
                   ElevatedButton(

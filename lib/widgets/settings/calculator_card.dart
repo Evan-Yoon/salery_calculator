@@ -48,7 +48,7 @@ class _CalculatorCardState extends State<CalculatorCard> {
                   fontWeight: FontWeight.bold,
                   color: Colors.grey)),
           const SizedBox(height: 8),
-          _buildToggleRow('주 15시간 이상 근무 (주휴수당 적용)', _includeWeeklyHoliday,
+          _buildToggleRow('주휴수당 (주 15시간↑ & 개근 시)', _includeWeeklyHoliday,
               (v) => setState(() => _includeWeeklyHoliday = v)),
           _buildToggleRow('5인 이상 사업장 (연장/야간 가산)', isFiveOrMoreEmployees,
               (v) => provider.setIsFiveOrMoreEmployees(v)),
@@ -70,7 +70,7 @@ class _CalculatorCardState extends State<CalculatorCard> {
                           Text('프리랜서 (3.3%)', style: TextStyle(fontSize: 13))),
                   DropdownMenuItem(
                       value: 0.094,
-                      child: Text('4대보험 (약 9.4%)',
+                      child: Text('4대보험 (26년 예상 약 9.4%)',
                           style: TextStyle(fontSize: 13))),
                 ],
                 onChanged: (val) {

@@ -210,7 +210,7 @@ class _AddShiftPageState extends State<AddShiftPage> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   const Text('수당 배율', style: TextStyle(fontSize: 16)),
-                  const Text('근무 조에 따른 배율 (1.0 = 배율 없음)',
+                  const Text('근무 조에 따른 배율 (1.0 = 배율 없음)\n※ 통상임금 기준 가산',
                       style: TextStyle(color: Colors.grey, fontSize: 12)),
                   const SizedBox(height: 8),
                   Row(
@@ -242,7 +242,7 @@ class _AddShiftPageState extends State<AddShiftPage> {
             crossAxisAlignment: CrossAxisAlignment.end,
             children: [
               const Text('휴일 근무', style: TextStyle(fontSize: 16)),
-              const Text('1.5배 수당 추가',
+              const Text('1.5배 수당 추가 (통상임금 기준)',
                   style: TextStyle(color: Colors.grey, fontSize: 12)),
               Switch(
                 value: _isHoliday,
