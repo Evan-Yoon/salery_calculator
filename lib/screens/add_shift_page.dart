@@ -1,3 +1,4 @@
+import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../providers/salary_provider.dart';
 import '../models/shift_entry.dart';
