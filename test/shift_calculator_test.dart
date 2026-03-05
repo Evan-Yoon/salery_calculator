@@ -1,5 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
-import '../lib/utils/shift_calculator.dart';
+import 'package:shift_salary_calculator/utils/shift_calculator.dart';
 
 void main() {
   group('ShiftCalculator Tests', () {
