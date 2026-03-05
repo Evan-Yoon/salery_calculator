@@ -5,6 +5,10 @@ import '../widgets/main_bottom_nav.dart';
 import '../widgets/settings/preset_section.dart';
 import '../widgets/settings/legal_section.dart';
 import '../widgets/settings/calculator_card.dart';
+import '../premium/premium_guard.dart';
+import '../premium/premium_features.dart';
+import '../premium/premium_state.dart';
+import '../screens/paywall_page.dart';
 
 // [STUDY NOTE]: 앱 하단바에서 '설정' 탭을 눌렀을 때 보이는 화면입니다. 시급 설정 변경 기능이 있습니다.
 class SettingsPage extends StatefulWidget {
@@ -43,6 +47,7 @@ class _SettingsPageState extends State<SettingsPage> {
   @override
   Widget build(BuildContext context) {
     final provider = Provider.of<SalaryProvider>(context);
+    final premiumProvider = Provider.of<PremiumProvider>(context);
 
     return Scaffold(
       appBar: AppBar(
@@ -69,6 +74,15 @@ class _SettingsPageState extends State<SettingsPage> {
           const SizedBox(height: 24),
           const DisclaimerCard(),
           const SizedBox(height: 24),
+
+          _buildSectionHeader('프리미엄 전용 기능 (Premium)'),
+          if (!premiumProvider.isPremium) ...[
+            _buildUpgradeBanner(),
+            const SizedBox(height: 16),
+          ],
+          _buildPremiumSection(),
+          const SizedBox(height: 24),
+
           const LegalSection(),
           const SizedBox(height: 24),
           _buildResetButton(),
@@ -254,5 +268,143 @@ class _SettingsPageState extends State<SettingsPage> {
       }
       provider.setHourlyWage(hourlyWage);
     }
+  }
+
+  Widget _buildUpgradeBanner() {
+    return InkWell(
+      onTap: () {
+        Navigator.push(
+          context,
+          MaterialPageRoute(builder: (_) => const PaywallPage()),
+        );
+      },
+      borderRadius: BorderRadius.circular(16),
+      child: Container(
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          gradient: const LinearGradient(
+            colors: [Colors.amber, Colors.orangeAccent],
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+          ),
+          borderRadius: BorderRadius.circular(16),
+        ),
+        child: const Row(
+          children: [
+            Icon(Icons.workspace_premium, color: Colors.white, size: 32),
+            SizedBox(width: 16),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text('Premium 업그레이드',
+                      style: TextStyle(
+                          color: Colors.white,
+                          fontWeight: FontWeight.bold,
+                          fontSize: 16)),
+                  SizedBox(height: 4),
+                  Text('모든 프리미엄 기능을 무제한으로 사용하세요!',
+                      style: TextStyle(color: Colors.white, fontSize: 12)),
+                ],
+              ),
+            ),
+            Icon(Icons.chevron_right, color: Colors.white),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildPremiumSection() {
+    return Container(
+      decoration: BoxDecoration(
+        color: Theme.of(context).cardTheme.color,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: Colors.white10),
+      ),
+      child: Column(
+        children: [
+          _buildPremiumTile(
+            title: '패턴 자동 생성',
+            icon: Icons.auto_awesome,
+            feature: PremiumFeature.shiftPatternGenerator,
+          ),
+          const Divider(height: 1, color: Colors.white10),
+          _buildPremiumTile(
+            title: '병원 규정 관리',
+            icon: Icons.local_hospital,
+            feature: PremiumFeature.hospitalPolicyCustomization,
+          ),
+          const Divider(height: 1, color: Colors.white10),
+          _buildPremiumTile(
+            title: '엑셀 리포트',
+            icon: Icons.table_chart,
+            feature: PremiumFeature.excelExport,
+          ),
+          const Divider(height: 1, color: Colors.white10),
+          _buildPremiumTile(
+            title: '백업/동기화',
+            icon: Icons.cloud_sync,
+            feature: PremiumFeature.cloudBackup,
+          ),
+          const Divider(height: 1, color: Colors.white10),
+          _buildPremiumTile(
+            title: '수당 템플릿',
+            icon: Icons.payments,
+            feature: PremiumFeature.allowanceTemplates,
+          ),
+          const Divider(height: 1, color: Colors.white10),
+          _buildPremiumTile(
+            title: '스마트 알림',
+            icon: Icons.notifications_active,
+            feature: PremiumFeature.smartNotifications,
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildPremiumTile({
+    required String title,
+    required IconData icon,
+    required PremiumFeature feature,
+  }) {
+    return PremiumGuard(
+      feature: feature,
+      lockedBuilder: ListTile(
+        leading: Icon(icon, color: Colors.grey),
+        title: Row(
+          children: [
+            Text(title, style: const TextStyle(color: Colors.grey)),
+            const SizedBox(width: 8),
+            const Icon(Icons.lock, size: 14, color: Colors.amber),
+            const SizedBox(width: 4),
+            const Text('Premium',
+                style: TextStyle(
+                    fontSize: 12,
+                    color: Colors.amber,
+                    fontWeight: FontWeight.bold)),
+          ],
+        ),
+        trailing: const Icon(Icons.chevron_right, color: Colors.grey),
+        onTap: () {
+          Navigator.push(
+            context,
+            MaterialPageRoute(builder: (_) => const PaywallPage()),
+          );
+        },
+      ),
+      child: ListTile(
+        leading: Icon(icon, color: Theme.of(context).colorScheme.primary),
+        title: Text(title, style: const TextStyle(fontWeight: FontWeight.bold)),
+        trailing: const Icon(Icons.chevron_right, color: Colors.grey),
+        onTap: () {
+          // 프리미엄일 때의 실제 동작 (현재는 placeholder)
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('$title 화면으로 이동합니다.')),
+          );
+        },
+      ),
+    );
   }
 }

@@ -9,6 +9,7 @@ import 'screens/onboarding_page.dart';
 import 'screens/home_page.dart';
 import 'screens/legal_onboarding_page.dart';
 import 'utils/holiday_utils.dart';
+import 'premium/premium_state.dart';
 
 // [STUDY NOTE]: main() 함수는 Dart 프로그램의 시작점입니다.
 // runApp()을 호출하여 앱의 루트 위젯을 화면에 그립니다.
@@ -42,7 +43,10 @@ class MyApp extends StatelessWidget {
     // [STUDY NOTE]: MultiProvider를 사용해 앱 전체에서 사용할 상태(Provider)들을 등록합니다.
     // 여기서는 SalaryProvider를 등록해 앱 전역에서 급여 데이터에 접근하고 변경할 수 있게 합니다.
     return MultiProvider(
-      providers: [ChangeNotifierProvider(create: (_) => SalaryProvider())],
+      providers: [
+        ChangeNotifierProvider(create: (_) => SalaryProvider()),
+        ChangeNotifierProvider(create: (_) => PremiumProvider()),
+      ],
       // [STUDY NOTE]: MaterialApp은 Material Design을 사용하는 플러터 앱의 기본 위젯입니다.
       child: MaterialApp(
         title: 'Shift Salary Calculator',

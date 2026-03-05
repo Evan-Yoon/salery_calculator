@@ -10,6 +10,8 @@ import '../models/shift_entry.dart';
 import '../models/bonus_entry.dart';
 import '../utils/report_generator.dart';
 import '../widgets/main_bottom_nav.dart';
+import '../premium/premium_state.dart';
+import 'paywall_page.dart';
 
 // [STUDY NOTE]: 이 페이지는 수집된 근무 기록과 보너스를 그래프로 보여주고, 알면 유용한 급여 팁을 제공합니다.
 class StatisticsPage extends StatefulWidget {
@@ -39,6 +41,21 @@ class _StatisticsPageState extends State<StatisticsPage> {
             tooltip: 'PDF 리포트 내보내기',
             onPressed: () async {
               try {
+                final premiumProvider =
+                    Provider.of<PremiumProvider>(context, listen: false);
+                final canGenerate =
+                    await premiumProvider.checkAndIncrementPdfCount();
+
+                if (!context.mounted) return;
+
+                if (!canGenerate) {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (_) => const PaywallPage()),
+                  );
+                  return;
+                }
+
                 // 저장 아이콘 클릭 시 로딩 인디케이터 시작
                 ScaffoldMessenger.of(context).showSnackBar(
                   const SnackBar(
@@ -78,6 +95,7 @@ class _StatisticsPageState extends State<StatisticsPage> {
           final shifts = provider.shifts;
           final bonuses = provider.bonuses;
           final taxRate = provider.taxRate;
+          final premiumProvider = Provider.of<PremiumProvider>(context);
 
           if (shifts.isEmpty && bonuses.isEmpty) {
             return const Center(
@@ -89,6 +107,10 @@ class _StatisticsPageState extends State<StatisticsPage> {
           return ListView(
             padding: const EdgeInsets.all(16),
             children: [
+              if (!premiumProvider.isPremium) ...[
+                _buildUpgradeBanner(),
+                const SizedBox(height: 24),
+              ],
               _buildViewToggler(),
               const SizedBox(height: 24),
               _buildBarChart(shifts, bonuses, taxRate),
@@ -104,6 +126,52 @@ class _StatisticsPageState extends State<StatisticsPage> {
         },
       ),
       bottomNavigationBar: const MainBottomNav(currentIndex: 2), // 네비게이션 인덱스 2
+    );
+  }
+
+  Widget _buildUpgradeBanner() {
+    return InkWell(
+      onTap: () {
+        Navigator.push(
+          context,
+          MaterialPageRoute(builder: (_) => const PaywallPage()),
+        );
+      },
+      borderRadius: BorderRadius.circular(16),
+      child: Container(
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: Theme.of(context).cardTheme.color,
+          border: Border.all(color: Colors.amber.withValues(alpha: 0.5)),
+          borderRadius: BorderRadius.circular(16),
+        ),
+        child: Row(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                  color: Colors.amber.withValues(alpha: 0.2),
+                  shape: BoxShape.circle),
+              child: const Icon(Icons.workspace_premium, color: Colors.amber),
+            ),
+            const SizedBox(width: 16),
+            const Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text('Premium 업그레이드',
+                      style:
+                          TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+                  SizedBox(height: 4),
+                  Text('PDF 생성 무제한 혜택 등을 경험해보세요!',
+                      style: TextStyle(color: Colors.grey, fontSize: 12)),
+                ],
+              ),
+            ),
+            const Icon(Icons.chevron_right, color: Colors.grey),
+          ],
+        ),
+      ),
     );
   }
 
