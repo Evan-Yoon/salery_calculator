@@ -27,10 +27,12 @@ class PremiumProvider extends ChangeNotifier {
 
   int _monthlyPdfCount = 0;
   String _lastPdfMonth = '';
+  bool _isBannerDismissed = false;
 
   PremiumState get state => _state;
   bool get isPremium => _state.isPremium;
   bool get isLoading => _isLoading;
+  bool get isBannerDismissed => _isBannerDismissed;
   int get monthlyPdfCount => _monthlyPdfCount;
 
   PremiumProvider() {
@@ -45,16 +47,18 @@ class PremiumProvider extends ChangeNotifier {
       final prefs = await SharedPreferences.getInstance();
       final isPremium = prefs.getBool('isPremium') ?? false;
 
-      _monthlyPdfCount = prefs.getInt('monthly_pdf_count') ?? 0;
-      _lastPdfMonth = prefs.getString('last_pdf_month') ?? '';
+      _monthlyPdfCount = prefs.getInt('pdf_export_count') ?? 0;
+      _lastPdfMonth = prefs.getString('pdf_export_month') ?? '';
+      _isBannerDismissed = prefs.getBool('premium_banner_dismissed') ?? false;
 
-      // 월이 바뀌었으면(또는 초기상태면) 카운트 리셋
-      final currentMonth = DateTime.now().toString().substring(0, 7); // yyyy-MM
+      // 월이 바뀌었으면(또는 초기상태면) 카운트 리셋 (YYYYMM 포맷)
+      final now = DateTime.now();
+      final currentMonth = '${now.year}${now.month.toString().padLeft(2, '0')}';
       if (_lastPdfMonth != currentMonth) {
         _monthlyPdfCount = 0;
         _lastPdfMonth = currentMonth;
-        await prefs.setInt('monthly_pdf_count', 0);
-        await prefs.setString('last_pdf_month', currentMonth);
+        await prefs.setInt('pdf_export_count', 0);
+        await prefs.setString('pdf_export_month', currentMonth);
       }
 
       // RevenueCat을 통한 실제 결제 기록 복원 및 확인 (웹에서는 스킵)
@@ -128,8 +132,9 @@ class PremiumProvider extends ChangeNotifier {
     // 1. 프리미엄 유저면 무제한 허용
     if (isPremium) return true;
 
-    // 2. 월이 바뀌었는지 재확인
-    final currentMonth = DateTime.now().toString().substring(0, 7);
+    // 2. 월이 바뀌었는지 재확인 (YYYYMM 포맷)
+    final now = DateTime.now();
+    final currentMonth = '${now.year}${now.month.toString().padLeft(2, '0')}';
     if (_lastPdfMonth != currentMonth) {
       _monthlyPdfCount = 0;
       _lastPdfMonth = currentMonth;
@@ -143,10 +148,17 @@ class PremiumProvider extends ChangeNotifier {
     // 4. 허용됨 -> 카운트 증가 저장
     _monthlyPdfCount++;
     final prefs = await SharedPreferences.getInstance();
-    await prefs.setInt('monthly_pdf_count', _monthlyPdfCount);
-    await prefs.setString('last_pdf_month', _lastPdfMonth);
+    await prefs.setInt('pdf_export_count', _monthlyPdfCount);
+    await prefs.setString('pdf_export_month', _lastPdfMonth);
     notifyListeners();
 
     return true;
+  }
+
+  Future<void> dismissBanner() async {
+    _isBannerDismissed = true;
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool('premium_banner_dismissed', true);
+    notifyListeners();
   }
 }

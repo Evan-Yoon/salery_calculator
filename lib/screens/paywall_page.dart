@@ -82,11 +82,12 @@ class _PaywallPageState extends State<PaywallPage> {
                         borderRadius: BorderRadius.circular(12),
                       ),
                       child: Text(
-                        '${widget.featureHint} 기능은 Premium에서 제공됩니다',
+                        '이 기능은 Premium에서 제공됩니다.\n교대 패턴을 자동으로 생성하고 월말 정산을 더 쉽게 관리하세요.',
                         style: TextStyle(
                           color: Theme.of(context).colorScheme.primary,
                           fontSize: 14,
                           fontWeight: FontWeight.w600,
+                          height: 1.5,
                         ),
                         textAlign: TextAlign.center,
                       ),
@@ -200,6 +201,23 @@ class _PaywallPageState extends State<PaywallPage> {
                     onPressed: () => Navigator.pop(context),
                     child: const Text('나중에',
                         style: TextStyle(color: Colors.grey, fontSize: 15)),
+                  ),
+
+                  const SizedBox(height: 24),
+
+                  // 구독 가치 설명 (Why Premium)
+                  const Padding(
+                    padding: EdgeInsets.symmetric(horizontal: 16),
+                    child: Text(
+                      'Premium 구독은 앱 유지 및 기능 개선에 사용됩니다.\n더 정확한 교대 관리와 정산 기능을 위해 끊임없이 노력하겠습니다.',
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: Colors.grey,
+                        height: 1.5,
+                        fontStyle: FontStyle.italic,
+                      ),
+                      textAlign: TextAlign.center,
+                    ),
                   ),
 
                   const SizedBox(height: 24),

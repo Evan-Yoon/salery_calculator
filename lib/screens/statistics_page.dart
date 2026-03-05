@@ -49,9 +49,21 @@ class _StatisticsPageState extends State<StatisticsPage> {
                 if (!context.mounted) return;
 
                 if (!canGenerate) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(
+                      content: Text(
+                          '무료 버전은 월 1회 PDF 저장이 가능합니다. Premium에서 무제한 제공됩니다.'),
+                      duration: Duration(seconds: 3),
+                    ),
+                  );
                   Navigator.push(
                     context,
-                    MaterialPageRoute(builder: (_) => const PaywallPage()),
+                    MaterialPageRoute(
+                      builder: (_) => const PaywallPage(
+                        entryPoint: "pdf_limit",
+                        featureHint: "PDF 리포트 무제한",
+                      ),
+                    ),
                   );
                   return;
                 }

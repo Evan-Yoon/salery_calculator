@@ -275,7 +275,10 @@ class _SettingsPageState extends State<SettingsPage> {
       onTap: () {
         Navigator.push(
           context,
-          MaterialPageRoute(builder: (_) => const PaywallPage()),
+          MaterialPageRoute(
+            builder: (_) =>
+                const PaywallPage(entryPoint: "settings_upgrade_button"),
+          ),
         );
       },
       borderRadius: BorderRadius.circular(16),
@@ -328,36 +331,42 @@ class _SettingsPageState extends State<SettingsPage> {
             title: '패턴 자동 생성',
             icon: Icons.auto_awesome,
             feature: PremiumFeature.shiftPatternGenerator,
+            featureHint: '교대 패턴 자동 생성',
           ),
           const Divider(height: 1, color: Colors.white10),
           _buildPremiumTile(
             title: '병원 규정 관리',
             icon: Icons.local_hospital,
             feature: PremiumFeature.hospitalPolicyCustomization,
+            featureHint: '병원별 급여 규정 저장',
           ),
           const Divider(height: 1, color: Colors.white10),
           _buildPremiumTile(
             title: '엑셀 리포트',
             icon: Icons.table_chart,
             feature: PremiumFeature.excelExport,
+            featureHint: '엑셀 리포트',
           ),
           const Divider(height: 1, color: Colors.white10),
           _buildPremiumTile(
             title: '백업/동기화',
             icon: Icons.cloud_sync,
             feature: PremiumFeature.cloudBackup,
+            featureHint: '기기 변경 데이터 복원',
           ),
           const Divider(height: 1, color: Colors.white10),
           _buildPremiumTile(
             title: '수당 템플릿',
             icon: Icons.payments,
             feature: PremiumFeature.allowanceTemplates,
+            featureHint: '수당 템플릿',
           ),
           const Divider(height: 1, color: Colors.white10),
           _buildPremiumTile(
             title: '스마트 알림',
             icon: Icons.notifications_active,
             feature: PremiumFeature.smartNotifications,
+            featureHint: '근무/월말 알림',
           ),
         ],
       ),
@@ -368,6 +377,7 @@ class _SettingsPageState extends State<SettingsPage> {
     required String title,
     required IconData icon,
     required PremiumFeature feature,
+    required String featureHint,
   }) {
     return PremiumGuard(
       feature: feature,
@@ -375,10 +385,8 @@ class _SettingsPageState extends State<SettingsPage> {
         leading: Icon(icon, color: Colors.grey),
         title: Row(
           children: [
-            Text(title, style: const TextStyle(color: Colors.grey)),
+            Text('$title 🔒', style: const TextStyle(color: Colors.grey)),
             const SizedBox(width: 8),
-            const Icon(Icons.lock, size: 14, color: Colors.amber),
-            const SizedBox(width: 4),
             const Text('Premium',
                 style: TextStyle(
                     fontSize: 12,
@@ -386,11 +394,18 @@ class _SettingsPageState extends State<SettingsPage> {
                     fontWeight: FontWeight.bold)),
           ],
         ),
+        subtitle: const Text('Premium 기능',
+            style: TextStyle(fontSize: 12, color: Colors.grey)),
         trailing: const Icon(Icons.chevron_right, color: Colors.grey),
         onTap: () {
           Navigator.push(
             context,
-            MaterialPageRoute(builder: (_) => const PaywallPage()),
+            MaterialPageRoute(
+              builder: (_) => PaywallPage(
+                entryPoint: "settings_locked",
+                featureHint: featureHint,
+              ),
+            ),
           );
         },
       ),
@@ -401,7 +416,7 @@ class _SettingsPageState extends State<SettingsPage> {
         onTap: () {
           // 프리미엄일 때의 실제 동작 (현재는 placeholder)
           ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('$title 화면으로 이동합니다.')),
+            const SnackBar(content: Text('준비 중입니다.')),
           );
         },
       ),
