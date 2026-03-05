@@ -198,11 +198,17 @@ class SalaryProvider with ChangeNotifier {
     notifyListeners();
   }
 
-  // [STUDY NOTE]: 온보딩 화면에서 근무 형태(교대 근무 여부)를 설정할 때 호출됩니다.
+  // [STUDY NOTE]: 온보딩의 첫 화면에서 근무 형태(교대 근무 여부)만 먼저 설정할 때 호출됩니다.
   void setWorkerType(bool isShiftWorker) {
     _isShiftWorker = isShiftWorker;
-    _hasCompletedOnboarding = true;
     saveData();
+    notifyListeners();
+  }
+
+  // [STUDY NOTE]: 온보딩의 두 번째 화면(급여 입력)까지 마치면 최종적으로 온보딩 완료 처리를 합니다.
+  Future<void> completeOnboarding() async {
+    _hasCompletedOnboarding = true;
+    await saveData();
     notifyListeners();
   }
 

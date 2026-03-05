@@ -12,10 +12,10 @@ class DisclaimerCard extends StatelessWidget {
         borderRadius: BorderRadius.circular(16),
         border: Border.all(color: Colors.white10),
       ),
-      child: Column(
+      child: const Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Row(
+          Row(
             children: [
               Icon(Icons.info_outline, color: Colors.grey, size: 20),
               SizedBox(width: 8),
@@ -29,8 +29,8 @@ class DisclaimerCard extends StatelessWidget {
               ),
             ],
           ),
-          const SizedBox(height: 12),
-          const Text(
+          SizedBox(height: 12),
+          Text(
             '본 앱에서 제공하는 급여 및 통계 계산 결과는 사용자가 입력한 데이터를 바탕으로 한 단순 참고용입니다.\n\n'
             '실제 수령액과 차이가 있을 수 있으며, 어떠한 경우에도 노사 갈등이나 법적 분쟁 상황에서 증거 자료로 활용되거나 법적 효력을 가질 수 없습니다.\n\n'
             '정확한 급여 산정 및 법적 자문이 필요하신 경우, 고용노동부 또는 공인노무사 등 전문가에게 문의하시기 바랍니다.',

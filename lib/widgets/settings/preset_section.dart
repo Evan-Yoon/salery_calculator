@@ -83,9 +83,10 @@ class PresetSection extends StatelessWidget {
                           },
                           child: Container(
                             padding: const EdgeInsets.all(16),
-                            decoration: BoxDecoration(
+                            decoration: const BoxDecoration(
                                 color: Colors.white10,
-                                borderRadius: BorderRadius.circular(12)),
+                                borderRadius:
+                                    BorderRadius.all(Radius.circular(12))),
                             child: Column(
                               children: [
                                 const Text('시작 시간',
@@ -113,9 +114,10 @@ class PresetSection extends StatelessWidget {
                           },
                           child: Container(
                             padding: const EdgeInsets.all(16),
-                            decoration: BoxDecoration(
+                            decoration: const BoxDecoration(
                                 color: Colors.white10,
-                                borderRadius: BorderRadius.circular(12)),
+                                borderRadius:
+                                    BorderRadius.all(Radius.circular(12))),
                             child: Column(
                               children: [
                                 const Text('종료 시간',
@@ -141,9 +143,10 @@ class PresetSection extends StatelessWidget {
                     children: [
                       const Text('휴게 시간', style: TextStyle(fontSize: 16)),
                       Container(
-                        decoration: BoxDecoration(
+                        decoration: const BoxDecoration(
                             color: Colors.white10,
-                            borderRadius: BorderRadius.circular(12)),
+                            borderRadius:
+                                BorderRadius.all(Radius.circular(12))),
                         child: Row(
                           children: [
                             IconButton(
@@ -184,9 +187,10 @@ class PresetSection extends StatelessWidget {
                         ],
                       ),
                       Container(
-                        decoration: BoxDecoration(
+                        decoration: const BoxDecoration(
                             color: Colors.white10,
-                            borderRadius: BorderRadius.circular(12)),
+                            borderRadius:
+                                BorderRadius.all(Radius.circular(12))),
                         child: Row(
                           children: [
                             IconButton(

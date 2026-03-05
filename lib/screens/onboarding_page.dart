@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../providers/salary_provider.dart';
-import '../widgets/main_bottom_nav.dart';
+import '../screens/salary_input_page.dart';
 
 // [STUDY NOTE]: 앱을 처음 실행했을 때 근무 형태(교대 vs 고정)를 묻는 온보딩 화면입니다.
 class OnboardingPage extends StatelessWidget {
@@ -111,16 +111,15 @@ class OnboardingPage extends StatelessWidget {
     );
   }
 
-  // [STUDY NOTE]: 버튼 클릭 시 상태(교대 여부)를 설정하고 홈 화면(BottomNav)으로 이동합니다.
+  // [STUDY NOTE]: 버튼 클릭 시 상태(교대 여부)를 설정하고 급여 입력 화면으로 이동합니다.
   void _selectWorkerType(BuildContext context, bool isShiftWorker) {
     Provider.of<SalaryProvider>(context, listen: false)
         .setWorkerType(isShiftWorker);
 
-    // 화면 교체 (뒤로 가기 방지)
+    // 급여 입력 화면으로 이동
     Navigator.pushReplacement(
       context,
-      MaterialPageRoute(
-          builder: (context) => const MainBottomNav(currentIndex: 0)),
+      MaterialPageRoute(builder: (context) => const SalaryInputPage()),
     );
   }
 }
