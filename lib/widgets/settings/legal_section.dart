@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../utils/holiday_utils.dart';
 
 class DisclaimerCard extends StatelessWidget {
   const DisclaimerCard({super.key});
@@ -79,6 +80,27 @@ class LegalSection extends StatelessWidget {
                     '본 앱은 어떠한 형태의 회원가입이나 로그인을 요구하지 않으며, 이름, 주민등록번호, 계좌번호 등 민감한 개인정보를 수집하지 않습니다.\n\n'
                         '사용자가 입력한 근무 시간, 급여 조건 등 모든 데이터는 외부 서버로 일체 전송되지 않고 사용자의 기기 내부(로컬 저장소)에만 안전하게 보관됩니다. (Zero-Data Collection Policy)\n\n'
                         '앱을 삭제하시거나 데이터 초기화를 진행하시면 기기 내에 보관된 모든 기록이 즉시 영구 삭제되며, 이는 복구될 수 없습니다.'),
+              ),
+              const Divider(height: 1, color: Colors.white10),
+              ListTile(
+                title:
+                    const Text('법정 공휴일 데이터 출처', style: TextStyle(fontSize: 14)),
+                trailing: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(HolidayUtils.dataSourceProvider,
+                        style:
+                            const TextStyle(fontSize: 12, color: Colors.grey)),
+                    const SizedBox(width: 8),
+                    const Icon(Icons.info_outline,
+                        color: Colors.grey, size: 16),
+                  ],
+                ),
+                onTap: () => _showLegalText(
+                    context,
+                    '공휴일 연동 정보',
+                    '현재 앱은 다음 소스에서 대한민국 법정 공휴일 데이터를 가져오고 있습니다:\n\n[ ${HolidayUtils.dataSourceProvider} ]\n\n'
+                        '기본적으로 대한민국 공공데이터포털(Data.go.kr)의 한국천문연구원 특일정보 API 연동을 시도하며, 네트워크 오류나 API 지연 시 앱 내부에 오프라인으로 하드코딩된 자체 데이터를 사용(Fallback)합니다.'),
               ),
             ],
           ),

@@ -3,13 +3,23 @@ import 'package:flutter/material.dart';
 // [STUDY NOTE]: provider는 상태 관리(State Management)를 위해 사용되는 패키지입니다.
 import 'package:provider/provider.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'providers/salary_provider.dart';
 import 'screens/onboarding_page.dart';
 import 'screens/home_page.dart';
+import 'utils/holiday_utils.dart';
 
 // [STUDY NOTE]: main() 함수는 Dart 프로그램의 시작점입니다.
 // runApp()을 호출하여 앱의 루트 위젯을 화면에 그립니다.
-void main() {
+void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+
+  // [STUDY NOTE]: 환경 변수 파일(.env)을 로드하여 안전하게 API 키 등을 관리합니다.
+  await dotenv.load(fileName: ".env");
+
+  // [STUDY NOTE]: 앱 시작 시 한국 공공데이터포털(또는 Fallback)에서 공휴일 데이터를 세팅합니다.
+  await HolidayUtils.initializeHolidays();
+
   runApp(const MyApp());
 }
 

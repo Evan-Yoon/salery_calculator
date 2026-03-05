@@ -10,8 +10,6 @@ class CalculatorCard extends StatefulWidget {
 }
 
 class _CalculatorCardState extends State<CalculatorCard> {
-  bool _includeWeeklyHoliday = true;
-
   String _formatCurrency(double amount) {
     return amount.toStringAsFixed(0).replaceAllMapped(
         RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'), (Match m) => '${m[1]},');
@@ -22,11 +20,12 @@ class _CalculatorCardState extends State<CalculatorCard> {
     final provider = Provider.of<SalaryProvider>(context);
     final double baseWage = provider.hourlyWage;
     final bool isFiveOrMoreEmployees = provider.isFiveOrMoreEmployees;
+    final bool assumeFullAttendance = provider.assumeFullAttendance;
     final double taxRate = provider.taxRate;
 
     final double effectiveHourlyWage =
-        _includeWeeklyHoliday ? baseWage * 1.2 : baseWage;
-    final double appliedMonthlyHours = _includeWeeklyHoliday ? 209.0 : 174.0;
+        assumeFullAttendance ? baseWage * 1.2 : baseWage;
+    final double appliedMonthlyHours = assumeFullAttendance ? 209.0 : 174.0;
     final double monthlyWage = baseWage * appliedMonthlyHours;
 
     final double insurance = monthlyWage * taxRate;
@@ -48,8 +47,8 @@ class _CalculatorCardState extends State<CalculatorCard> {
                   fontWeight: FontWeight.bold,
                   color: Colors.grey)),
           const SizedBox(height: 8),
-          _buildToggleRow('주휴수당 (주 15시간↑ & 개근 시)', _includeWeeklyHoliday,
-              (v) => setState(() => _includeWeeklyHoliday = v)),
+          _buildToggleRow('주휴수당 포함 (개근 가정)', assumeFullAttendance,
+              (v) => provider.setAssumeFullAttendance(v)),
           _buildToggleRow('5인 이상 사업장 (연장/야간 가산)', isFiveOrMoreEmployees,
               (v) => provider.setIsFiveOrMoreEmployees(v)),
           Row(
@@ -90,12 +89,12 @@ class _CalculatorCardState extends State<CalculatorCard> {
                   color: Colors.grey)),
           const SizedBox(height: 12),
           _buildResultRow('기본 시급', '${_formatCurrency(baseWage)}원'),
-          if (_includeWeeklyHoliday)
+          if (assumeFullAttendance)
             _buildResultRow(
                 '주휴수당 포함 시급 (1.2배)', '${_formatCurrency(effectiveHourlyWage)}원',
                 valueColor: Colors.greenAccent),
           _buildResultRow('월 예상 급여 (세전)',
-              '${_formatCurrency(monthlyWage)}원 (${_includeWeeklyHoliday ? "209시간" : "174시간"})'),
+              '${_formatCurrency(monthlyWage)}원 (${assumeFullAttendance ? "209시간" : "174시간"})'),
           if (taxRate > 0)
             _buildResultRow('세금 공제 (${(taxRate * 100).toStringAsFixed(1)}%)',
                 '-${_formatCurrency(insurance)}원',

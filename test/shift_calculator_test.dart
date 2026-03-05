@@ -125,5 +125,96 @@ void main() {
       // 순수 8시간 일반 근로 = 80000
       expect(pay, 80000.0);
     });
+
+    test('8. 휴일 근무 (5인 이상, 8시간 이내 - 6시간)', () {
+      final start = DateTime(2024, 1, 1, 9, 0);
+      final end = DateTime(2024, 1, 1, 15, 0); // 6시간
+      final pay = ShiftCalculator.calculateTotalPay(
+        startTime: start,
+        endTime: end,
+        breakTimeMinutes: 0,
+        isHoliday: true,
+        hourlyWage: hourlyWage,
+        isFiveOrMoreEmployees: true,
+        payMultiplier: 1.0,
+      );
+      // 6 * 10000 * 1.5 = 90000
+      expect(pay, 90000.0);
+    });
+
+    test('9. 휴일 근무 (5인 이상, 8시간 초과 - 10시간)', () {
+      final start = DateTime(2024, 1, 1, 9, 0);
+      final end = DateTime(2024, 1, 1, 19, 0); // 10시간
+      final pay = ShiftCalculator.calculateTotalPay(
+        startTime: start,
+        endTime: end,
+        breakTimeMinutes: 0,
+        isHoliday: true,
+        hourlyWage: hourlyWage,
+        isFiveOrMoreEmployees: true,
+        payMultiplier: 1.0,
+      );
+      // 8시간분: 8 * 10000 * 1.5 = 120000
+      // 초과 2시간분: 2 * 10000 * 2.0 = 40000
+      // 총합 = 160000
+      expect(pay, 160000.0);
+    });
+
+    test('10. 휴일 근무 (5인 미만 사업장)', () {
+      final start = DateTime(2024, 1, 1, 9, 0);
+      final end = DateTime(2024, 1, 1, 19, 0); // 10시간
+      final pay = ShiftCalculator.calculateTotalPay(
+        startTime: start,
+        endTime: end,
+        breakTimeMinutes: 0,
+        isHoliday: true,
+        hourlyWage: hourlyWage,
+        isFiveOrMoreEmployees: false,
+        payMultiplier: 1.0,
+      );
+      // 5인 미만은 가산 없음, 기본 시급만 곱해짐
+      // 10 * 10000 = 100000
+      expect(pay, 100000.0);
+    });
+
+    test('11. 주간/일간 연장근로 중복 방지 (weekly=39, net=4)', () {
+      // 주 누적 39시간 상태에서, 오늘 4시간(일 연장 0h) 일함 -> 주 연장은 3h 산출됨 => max(0, 3) = 3시간 연장 인정
+      final start = DateTime(2024, 1, 1, 9, 0);
+      final end = DateTime(2024, 1, 1, 13, 0); // 4시간
+      final pay = ShiftCalculator.calculateTotalPay(
+        startTime: start,
+        endTime: end,
+        breakTimeMinutes: 0,
+        isHoliday: false,
+        hourlyWage: hourlyWage,
+        isFiveOrMoreEmployees: true,
+        payMultiplier: 1.0,
+        weeklyWorkedHours: 39.0, // 누적 39시간
+      );
+      // 기본급: 4 * 10000 = 40000
+      // 연장수당: 3 * 5000 = 15000
+      // 총합 = 55000
+      expect(pay, 55000.0);
+    });
+
+    test('12. 주간/일간 연장근로 중복 방지 (weekly=38, net=10)', () {
+      // 주 누적 38시간 상태에서, 오늘 10시간(일 연장 2h) 일함 -> 주 연장은 8h 산출됨 => max(2, 8) = 8시간 연장 인정
+      final start = DateTime(2024, 1, 1, 9, 0);
+      final end = DateTime(2024, 1, 1, 19, 0); // 10시간
+      final pay = ShiftCalculator.calculateTotalPay(
+        startTime: start,
+        endTime: end,
+        breakTimeMinutes: 0,
+        isHoliday: false,
+        hourlyWage: hourlyWage,
+        isFiveOrMoreEmployees: true,
+        payMultiplier: 1.0,
+        weeklyWorkedHours: 38.0, // 누적 38시간
+      );
+      // 기본급: 10 * 10000 = 100000
+      // 연장수당(8시간 인정): 8 * 5000 = 40000
+      // 총합 = 140000
+      expect(pay, 140000.0);
+    });
   });
 }

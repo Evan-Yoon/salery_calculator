@@ -131,22 +131,14 @@ class _HomePageState extends State<HomePage> {
           shiftsByWeek[weekKey]!.add(s);
         }
 
-        // 2. 주별로 순 근로시간 산정 후 주휴수당 부과 (15시간 이상일 시)
-        for (var weekShifts in shiftsByWeek.values) {
-          double weeklyHours = 0.0;
-          Set<String> workDayStrings = {}; // 유니크한 근무일수 체크
-          for (var s in weekShifts) {
-            int netMins = s.endTime.difference(s.startTime).inMinutes -
-                s.breakTimeMinutes;
-            if (netMins > 0) {
-              weeklyHours += (netMins / 60.0);
-              workDayStrings.add(
-                  "${s.startTime.year}-${s.startTime.month}-${s.startTime.day}");
-            }
-          }
-          totalWeeklyHolidayAllowance +=
-              provider.calculateWeeklyHolidayAllowance(
-                  weeklyHours, workDayStrings.length, provider.hourlyWage);
+        // 2. 주별로 순 근로시간 산정 후 주휴수당 부과
+        for (var weekString in shiftsByWeek.keys) {
+          List<String> parts = weekString.split('-');
+          DateTime weekDate = DateTime(
+              int.parse(parts[0]), int.parse(parts[1]), int.parse(parts[2]));
+
+          Map<String, dynamic> summary = provider.getWeeklySummary(weekDate);
+          totalWeeklyHolidayAllowance += summary['weeklyHolidayAllowance'];
         }
 
         final totalSalary =

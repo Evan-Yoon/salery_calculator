@@ -153,20 +153,13 @@ class _StatisticsPageState extends State<StatisticsPage> {
           if (!shiftsByWeek.containsKey(weekKey)) shiftsByWeek[weekKey] = [];
           shiftsByWeek[weekKey]!.add(s);
         }
-        for (var weekShifts in shiftsByWeek.values) {
-          double weeklyHours = 0.0;
-          Set<String> workDayStrings = {};
-          for (var s in weekShifts) {
-            int netMins = s.endTime.difference(s.startTime).inMinutes -
-                s.breakTimeMinutes;
-            if (netMins > 0) {
-              weeklyHours += (netMins / 60.0);
-              workDayStrings.add(
-                  "${s.startTime.year}-${s.startTime.month}-${s.startTime.day}");
-            }
-          }
-          monthlyHolidayAllowance += provider.calculateWeeklyHolidayAllowance(
-              weeklyHours, workDayStrings.length, provider.hourlyWage);
+        for (var weekString in shiftsByWeek.keys) {
+          List<String> parts = weekString.split('-');
+          DateTime weekDate = DateTime(
+              int.parse(parts[0]), int.parse(parts[1]), int.parse(parts[2]));
+
+          Map<String, dynamic> summary = provider.getWeeklySummary(weekDate);
+          monthlyHolidayAllowance += summary['weeklyHolidayAllowance'];
         }
 
         monthTotal += (monthlyHolidayAllowance * multiplier);
@@ -204,32 +197,8 @@ class _StatisticsPageState extends State<StatisticsPage> {
         // 오늘 근무가 있었다면, 오늘이 이번 주의 마지막 근무일인지 확인하여 주휴수당을 정산합니다.
         // (미래 일정이 등록되어 있을 수 있으므로, 단순화를 위해 일요일이거나 오늘이 마지막 조회일인 경우 정산)
         if (hasShiftToday && (dayDate.weekday == DateTime.sunday || i == 0)) {
-          // 이 주차의 총 근무 시간 계산 (월요일 ~ 현재 dayDate)
-          int daysFromMonday = dayDate.weekday - DateTime.monday;
-          if (daysFromMonday < 0) daysFromMonday += 7;
-          DateTime mondayStart =
-              DateTime(dayDate.year, dayDate.month, dayDate.day)
-                  .subtract(Duration(days: daysFromMonday));
-
-          double weeklyHours = 0.0;
-          Set<String> workDayStrings = {};
-          for (var s in shifts) {
-            if ((s.startTime.isAfter(mondayStart) ||
-                    s.startTime.isAtSameMomentAs(mondayStart)) &&
-                (s.startTime.isBefore(dayDate) ||
-                    s.startTime.isAtSameMomentAs(dayDate))) {
-              int netMins = s.endTime.difference(s.startTime).inMinutes -
-                  s.breakTimeMinutes;
-              if (netMins > 0) {
-                weeklyHours += (netMins / 60.0);
-                workDayStrings.add(
-                    "${s.startTime.year}-${s.startTime.month}-${s.startTime.day}");
-              }
-            }
-          }
-
-          double weeklyAllowance = provider.calculateWeeklyHolidayAllowance(
-              weeklyHours, workDayStrings.length, provider.hourlyWage);
+          Map<String, dynamic> summary = provider.getWeeklySummary(dayDate);
+          double weeklyAllowance = summary['weeklyHolidayAllowance'];
           dayTotal += (weeklyAllowance * multiplier);
         }
 

@@ -1,68 +1,48 @@
+import 'package:flutter_dotenv/flutter_dotenv.dart';
+import '../repositories/holiday_repository.dart';
+
 class HolidayUtils {
-  // [STUDY NOTE]: 2024~2026 대한민국의 법정공휴일 리스트입니다.
-  // 실제 서비스라면 서버에서 공공 데이터 포털 API를 호출해 가져오는 것이 제일 정확합니다.
-  static final Map<String, String> _holidays = {
-    // 2024
-    '2024-01-01': '신정',
-    '2024-02-09': '설날 연휴',
-    '2024-02-10': '설날',
-    '2024-02-11': '설날 연휴',
-    '2024-02-12': '대체공휴일(설날)',
-    '2024-03-01': '3·1절',
-    '2024-04-10': '제22대 국회의원 선거',
-    '2024-05-05': '어린이날',
-    '2024-05-06': '대체공휴일(어린이날)',
-    '2024-05-15': '부처님오신날',
-    '2024-06-06': '현충일',
-    '2024-08-15': '광복절',
-    '2024-09-16': '추석 연휴',
-    '2024-09-17': '추석',
-    '2024-09-18': '추석 연휴',
-    '2024-10-01': '국군의 날 (임시공휴일)',
-    '2024-10-03': '개천절',
-    '2024-10-09': '한글날',
-    '2024-12-25': '기독탄신일',
+  // 메모리에 캐싱할 공휴일 데이터
+  static final Map<String, String> _holidays = {};
 
-    // 2025
-    '2025-01-01': '신정',
-    '2025-01-28': '설날 연휴',
-    '2025-01-29': '설날',
-    '2025-01-30': '설날 연휴',
-    '2025-03-01': '3·1절',
-    '2025-03-03': '대체공휴일(3·1절)',
-    '2025-05-05': '어린이날/부처님오신날', // 겹침
-    '2025-05-06': '대체공휴일(어린이날)',
-    '2025-06-06': '현충일',
-    '2025-08-15': '광복절',
-    '2025-10-03': '개천절',
-    '2025-10-05': '추석 연휴',
-    '2025-10-06': '추석',
-    '2025-10-07': '추석 연휴',
-    '2025-10-08': '대체공휴일(추석)',
-    '2025-10-09': '한글날',
-    '2025-12-25': '기독탄신일',
+  // 데이터 출처를 UI에 표시하기 위한 상태 변수
+  static String dataSourceProvider = '알 수 없음';
 
-    // 2026
-    '2026-01-01': '신정',
-    '2026-02-16': '설날 연휴',
-    '2026-02-17': '설날',
-    '2026-02-18': '설날 연휴',
-    '2026-03-01': '3·1절',
-    '2026-03-02': '대체공휴일(3·1절)',
-    '2026-05-05': '어린이날',
-    '2026-05-24': '부처님오신날',
-    '2026-05-25': '대체공휴일(부처님오신날)',
-    '2026-06-06': '현충일',
-    '2026-08-15': '광복절',
-    '2026-08-17': '대체공휴일(광복절)',
-    '2026-09-24': '추석 연휴',
-    '2026-09-25': '추석',
-    '2026-09-26': '추석 연휴',
-    '2026-10-03': '개천절',
-    '2026-10-05': '대체공휴일(개천절)',
-    '2026-10-09': '한글날',
-    '2026-12-25': '기독탄신일',
-  };
+  // 데이터 소스 설정
+  static final HolidayRepository _fallbackRepo =
+      LocalFallbackHolidayRepository();
+
+  // [STUDY NOTE]: 앱 시작 시(예: main.dart) 호출하여 미리 2024~2026년 공휴일 데이터를 로드(Fetch)해둡니다.
+  // 첫 번째로 Remote API를 시도하고, 실패 시 내장된 Fallback을 사용하도록 구성된 구조입니다.
+  static Future<void> initializeHolidays() async {
+    try {
+      // 1. 공공데이터 연동 시도
+      final String apiKey = dotenv.env['HOLIDAY_API_KEY'] ?? '';
+      final HolidayRepository remoteRepo =
+          RemoteHolidayRepository(apiKey: apiKey);
+
+      final holidays2024 = await remoteRepo.fetchHolidays(2024);
+      final holidays2025 = await remoteRepo.fetchHolidays(2025);
+      final holidays2026 = await remoteRepo.fetchHolidays(2026);
+
+      _holidays.addAll(holidays2024);
+      _holidays.addAll(holidays2025);
+      _holidays.addAll(holidays2026);
+
+      dataSourceProvider = '공공데이터포털 연동 (실시간)';
+    } catch (e) {
+      // 2. 실패 시 Fallback(하드코딩) 파싱
+      final fallback2024 = await _fallbackRepo.fetchHolidays(2024);
+      final fallback2025 = await _fallbackRepo.fetchHolidays(2025);
+      final fallback2026 = await _fallbackRepo.fetchHolidays(2026);
+
+      _holidays.addAll(fallback2024);
+      _holidays.addAll(fallback2025);
+      _holidays.addAll(fallback2026);
+
+      dataSourceProvider = '내장 오프라인 데이터 (Fallback)';
+    }
+  }
 
   static bool isHoliday(DateTime date) {
     String dateString =

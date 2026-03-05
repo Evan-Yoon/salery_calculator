@@ -42,6 +42,9 @@ class SalaryProvider with ChangeNotifier {
   bool _isShiftWorker = true;
   bool _hasCompletedOnboarding = false;
 
+  // [STUDY NOTE]: Phase 9: 주휴수당 개근 가정 토글 (기본값 설정 OFF)
+  bool _assumeFullAttendance = false;
+
   // [STUDY NOTE]: 외부에서 데이터를 가져다 쓸 수 있도록 열어둔 getter 함수입니다. 외부에서는 데이터를 직접 변경할 수 없습니다.
   List<ShiftEntry> get shifts => _shifts;
   List<BonusEntry> get bonuses => _bonuses;
@@ -51,6 +54,7 @@ class SalaryProvider with ChangeNotifier {
   double get taxRate => _taxRate;
   bool get isShiftWorker => _isShiftWorker;
   bool get hasCompletedOnboarding => _hasCompletedOnboarding;
+  bool get assumeFullAttendance => _assumeFullAttendance;
 
   // [STUDY NOTE]: 등록된 모든 근무 기록의 총 급여와 비정기 급여를 합산하여 반환하는 Getter
   double get totalSalary {
@@ -87,6 +91,7 @@ class SalaryProvider with ChangeNotifier {
     _taxRate = prefs.getDouble('taxRate') ?? 0.0;
     _isShiftWorker = prefs.getBool('isShiftWorker') ?? true;
     _hasCompletedOnboarding = prefs.getBool('hasCompletedOnboarding') ?? false;
+    _assumeFullAttendance = prefs.getBool('assumeFullAttendance') ?? false;
 
     // 근무 프리셋 가져오기
     final String? presetsString = prefs.getString('shiftPresets');
@@ -135,6 +140,7 @@ class SalaryProvider with ChangeNotifier {
     prefs.setDouble('taxRate', _taxRate);
     prefs.setBool('isShiftWorker', _isShiftWorker);
     prefs.setBool('hasCompletedOnboarding', _hasCompletedOnboarding);
+    prefs.setBool('assumeFullAttendance', _assumeFullAttendance);
     prefs.setString('shiftPresets',
         jsonEncode(_shiftPresets.map((e) => e.toMap()).toList()));
 
@@ -210,6 +216,12 @@ class SalaryProvider with ChangeNotifier {
     notifyListeners();
   }
 
+  void setAssumeFullAttendance(bool value) {
+    _assumeFullAttendance = value;
+    saveData();
+    notifyListeners();
+  }
+
   // [STUDY NOTE]: 온보딩의 첫 화면에서 근무 형태(교대 근무 여부)만 먼저 설정할 때 호출됩니다.
   void setWorkerType(bool isShiftWorker) {
     _isShiftWorker = isShiftWorker;
@@ -268,13 +280,55 @@ class SalaryProvider with ChangeNotifier {
     return weeklyHours;
   }
 
-  // [STUDY NOTE]: 주휴수당을 계산합니다. 조건: 주 15시간 이상 근무 & 개근 (개근 여부는 앱에서 증명 불가하므로 시간 조건만 체크)
+  // [STUDY NOTE]: 주휴수당을 계산합니다. 조건: 주 15시간 이상 근무 & 사용자가 '개근 가정'을 활성화했을 때만.
   // 계산식: (주 근로시간 / 근무일수) * 시급
   double calculateWeeklyHolidayAllowance(
       double weeklyHours, int workDays, double hourlyWage) {
+    if (!_assumeFullAttendance) {
+      return 0.0; // 사용자가 개근(Full Attendance) 토글을 켜지 않으면 주휴수당 발생 안함
+    }
     if (weeklyHours < 15.0 || workDays <= 0) {
       return 0.0; // 주 15시간 미만 또는 근무일이 없으면 주휴수당 없음
     }
     return (weeklyHours / workDays) * hourlyWage;
+  }
+
+  // [STUDY NOTE]: 특정 날짜가 속한 '주(Week)'의 총 근무시간, 총 근무일수, 그리고 계산된 주휴수당을 한 번에 반환합니다.
+  Map<String, dynamic> getWeeklySummary(DateTime targetDate) {
+    int daysFromMonday = targetDate.weekday - DateTime.monday;
+    if (daysFromMonday < 0) {
+      daysFromMonday += 7;
+    }
+    DateTime mondayStart =
+        DateTime(targetDate.year, targetDate.month, targetDate.day)
+            .subtract(Duration(days: daysFromMonday));
+    DateTime nextMondayStart = mondayStart.add(const Duration(days: 7));
+
+    double weeklyHours = 0.0;
+    Set<String> uniqueWorkDays = {}; // 근무일수 카운팅을 위한 Set (같은 날 2교대 하더라도 1일로 산정)
+
+    for (var shift in _shifts) {
+      if ((shift.startTime.isAfter(mondayStart) ||
+              shift.startTime.isAtSameMomentAs(mondayStart)) &&
+          shift.startTime.isBefore(nextMondayStart)) {
+        int netMinutes = shift.endTime.difference(shift.startTime).inMinutes -
+            shift.breakTimeMinutes;
+        if (netMinutes > 0) {
+          weeklyHours += (netMinutes / 60.0);
+          uniqueWorkDays.add(
+              '${shift.startTime.year}-${shift.startTime.month}-${shift.startTime.day}');
+        }
+      }
+    }
+
+    int workDays = uniqueWorkDays.length;
+    double allowance =
+        calculateWeeklyHolidayAllowance(weeklyHours, workDays, _hourlyWage);
+
+    return {
+      'weeklyHours': weeklyHours,
+      'workDays': workDays,
+      'weeklyHolidayAllowance': allowance,
+    };
   }
 }

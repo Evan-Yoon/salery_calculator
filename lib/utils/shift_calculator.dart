@@ -13,9 +13,11 @@ class BasePayCalculator {
           netHours > SalaryConstants.legalWorkHoursPerDay
               ? SalaryConstants.legalWorkHoursPerDay
               : netHours;
-      return regularHolidayHours * (hourlyWage * 1.5);
+      return regularHolidayHours *
+          (hourlyWage * SalaryConstants.holidayBaseRate);
     } else {
-      double rate = isHoliday ? hourlyWage * 1.5 : hourlyWage;
+      double rate =
+          isHoliday ? hourlyWage * SalaryConstants.holidayBaseRate : hourlyWage;
       if (!isFiveOrMoreEmployees) rate = hourlyWage;
       return netHours * rate;
     }
@@ -27,13 +29,16 @@ class BasePayCalculator {
     required double hourlyWage,
     required bool isFiveOrMoreEmployees,
   }) {
+    // [STUDY NOTE]: 휴일근로 시 8시간 이하분은 기본 1.5배, 8시간 초과분은 2.0배 (기본 1.5배 + 휴일가산 0.5배)로 계산합니다. (5인 이상 사업장 적용)
     if (isHoliday && isFiveOrMoreEmployees) {
       double overtimeHolidayHours =
           netHours > SalaryConstants.legalWorkHoursPerDay
               ? netHours - SalaryConstants.legalWorkHoursPerDay
               : 0.0;
       return overtimeHolidayHours *
-          (hourlyWage * SalaryConstants.holidayOvertimeRate);
+          (hourlyWage *
+              (SalaryConstants.holidayBaseRate +
+                  SalaryConstants.holidayAdditionRate));
     }
     return 0.0;
   }
@@ -66,10 +71,14 @@ class OvertimeCalculator {
 
       double effectiveOvertimeHours =
           dailyOvertime > weeklyOvertime ? dailyOvertime : weeklyOvertime;
+
+      // [STUDY NOTE]: 일 단위 연장근로와 주 단위 연장근로가 중첩될 때, 이중 가산을 피하기 위해
+      // OvertimeHours = max(dailyOvertime, weeklyOvertime) 원칙을 사용합니다.
+      // 예: 주 39시간 누적 상태에서 오늘 4시간 일함 -> 일 연장 0h, 주 연장 3h -> 3h 인정
+      // 예: 주 38시간 누적 상태에서 오늘 10시간 일함 -> 일 연장 2h, 주 연장 8h -> 8h 인정.
       return effectiveOvertimeHours *
           hourlyWage *
-          SalaryConstants
-              .nightRate; // 연장 가산율 0.5 (nightRate 재사용 혹은 overtimeRate 분리 가능, 현재 0.5)
+          SalaryConstants.overtimeAdditionRate;
     }
     return 0.0;
   }
@@ -89,7 +98,7 @@ class NightShiftCalculator {
       nightHours = netHours;
     }
     return isFiveOrMoreEmployees
-        ? nightHours * hourlyWage * SalaryConstants.nightRate
+        ? nightHours * hourlyWage * SalaryConstants.nightAdditionRate
         : 0.0;
   }
 
