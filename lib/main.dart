@@ -5,7 +5,7 @@ import 'package:provider/provider.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'providers/salary_provider.dart';
 import 'screens/onboarding_page.dart';
-import 'widgets/main_bottom_nav.dart';
+import 'screens/home_page.dart';
 
 // [STUDY NOTE]: main() 함수는 Dart 프로그램의 시작점입니다.
 // runApp()을 호출하여 앱의 루트 위젯을 화면에 그립니다.
@@ -76,7 +76,7 @@ class MyApp extends StatelessWidget {
           builder: (context, provider, child) {
             // [STUDY NOTE]: 기존 유저이거나 온보딩을 완료한 경우 메인 화면(BottomNav)으로 이동하고, 처음인 경우 온보딩 배치를 보여줍니다.
             if (provider.hasCompletedOnboarding) {
-              return const MainBottomNav(currentIndex: 0);
+              return const HomePage();
             } else {
               return const OnboardingPage();
             }

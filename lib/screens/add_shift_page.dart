@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 import '../providers/salary_provider.dart';
 import '../models/shift_entry.dart';
 import '../utils/shift_calculator.dart';
+import '../utils/holiday_utils.dart';
 import '../widgets/add_shift/preset_chips.dart';
 import '../widgets/add_shift/date_time_card.dart';
 
@@ -22,6 +23,14 @@ class _AddShiftPageState extends State<AddShiftPage> {
   int _breakTimeMinutes = 60;
   bool _isHoliday = false;
   double _payMultiplier = 1.0;
+
+  @override
+  void initState() {
+    super.initState();
+    if (HolidayUtils.isHoliday(_selectedDate)) {
+      _isHoliday = true;
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -118,7 +127,7 @@ class _AddShiftPageState extends State<AddShiftPage> {
                       icon: const Icon(Icons.remove, size: 16),
                       onPressed: () {
                         setState(() {
-                          if (_breakTimeMinutes >= 30) _breakTimeMinutes -= 30;
+                          if (_breakTimeMinutes >= 5) _breakTimeMinutes -= 5;
                         });
                       },
                     ),
@@ -132,7 +141,7 @@ class _AddShiftPageState extends State<AddShiftPage> {
                       color: Theme.of(context).colorScheme.primary,
                       onPressed: () {
                         setState(() {
-                          _breakTimeMinutes += 30;
+                          _breakTimeMinutes += 5;
                         });
                       },
                     ),
@@ -327,7 +336,14 @@ class _AddShiftPageState extends State<AddShiftPage> {
       locale: const Locale('ko', 'KR'),
     );
     if (picked != null) {
-      setState(() => _selectedDate = picked);
+      setState(() {
+        _selectedDate = picked;
+        if (HolidayUtils.isHoliday(picked)) {
+          _isHoliday = true;
+        } else {
+          _isHoliday = false; // 공휴일이 아니면 기본값으로 해제 (수동 조작을 위해 고민이 필요하지만 일단 자동화)
+        }
+      });
     }
   }
 

@@ -152,7 +152,7 @@ class PresetSection extends StatelessWidget {
                             IconButton(
                               icon: const Icon(Icons.remove, size: 16),
                               onPressed: () => setModalState(() {
-                                if (tempBreakTime >= 30) tempBreakTime -= 30;
+                                if (tempBreakTime >= 5) tempBreakTime -= 5;
                               }),
                             ),
                             Text('$tempBreakTime분',
@@ -162,7 +162,7 @@ class PresetSection extends StatelessWidget {
                               icon: const Icon(Icons.add, size: 16),
                               color: Theme.of(context).colorScheme.primary,
                               onPressed: () => setModalState(() {
-                                tempBreakTime += 30;
+                                tempBreakTime += 5;
                               }),
                             ),
                           ],

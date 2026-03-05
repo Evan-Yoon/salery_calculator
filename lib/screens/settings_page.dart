@@ -23,7 +23,15 @@ class _SettingsPageState extends State<SettingsPage> {
   void initState() {
     super.initState();
     final provider = Provider.of<SalaryProvider>(context, listen: false);
-    _wageController.text = provider.hourlyWage.toInt().toString();
+    _wageController.text =
+        _formatWithComma(provider.hourlyWage.toInt().toString());
+  }
+
+  String _formatWithComma(String numStr) {
+    if (numStr.isEmpty) return '';
+    final number = int.tryParse(numStr.replaceAll(RegExp(r'[^0-9]'), '')) ?? 0;
+    return number.toString().replaceAllMapped(
+        RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'), (Match m) => '${m[1]},');
   }
 
   @override
@@ -139,11 +147,32 @@ class _SettingsPageState extends State<SettingsPage> {
                           isDense: true,
                           hintText: '10320',
                         ),
-                        onChanged: (val) => _saveWage(),
+                        onChanged: (text) {
+                          final numericString =
+                              text.replaceAll(RegExp(r'[^0-9]'), '');
+                          if (numericString.isEmpty) {
+                            _wageController.value =
+                                const TextEditingValue(text: '');
+                          } else {
+                            final number = int.parse(numericString);
+                            final formatted = number
+                                .toString()
+                                .replaceAllMapped(
+                                    RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'),
+                                    (Match m) => '${m[1]},');
+                            _wageController.value = TextEditingValue(
+                              text: formatted,
+                              selection: TextSelection.collapsed(
+                                  offset: formatted.length),
+                            );
+                          }
+                          _saveWage();
+                        },
                       ),
                     ),
                     const SizedBox(width: 4),
-                    const Text('원', style: TextStyle(fontSize: 16)),
+                    Text(_wageType == '시급' ? '원' : '만원',
+                        style: const TextStyle(fontSize: 16)),
                   ],
                 ),
               ],
@@ -178,14 +207,14 @@ class _SettingsPageState extends State<SettingsPage> {
 
     double displayValue = currentHourlyWage;
     if (newValue == '월급') {
-      displayValue = currentHourlyWage * 209.0;
+      displayValue = (currentHourlyWage * 209.0) / 10000.0;
     } else if (newValue == '연봉') {
-      displayValue = currentHourlyWage * 209.0 * 12.0;
+      displayValue = (currentHourlyWage * 209.0 * 12.0) / 10000.0;
     }
 
     setState(() {
       _wageType = newValue;
-      _wageController.text = displayValue.toInt().toString();
+      _wageController.text = _formatWithComma(displayValue.toInt().toString());
     });
   }
 
@@ -197,9 +226,9 @@ class _SettingsPageState extends State<SettingsPage> {
     if (inputValue != null) {
       double hourlyWage = inputValue;
       if (_wageType == '월급') {
-        hourlyWage = inputValue / 209.0;
+        hourlyWage = (inputValue * 10000) / 209.0;
       } else if (_wageType == '연봉') {
-        hourlyWage = inputValue / (209.0 * 12.0);
+        hourlyWage = (inputValue * 10000) / (209.0 * 12.0);
       }
       provider.setHourlyWage(hourlyWage);
     }

@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../providers/salary_provider.dart';
-import '../widgets/main_bottom_nav.dart';
+import 'home_page.dart';
 
 // [STUDY NOTE]: 온보딩의 두 번째 단계로, 사용자가 시급/월급/연봉을 입력하는 화면입니다.
 class SalaryInputPage extends StatefulWidget {
@@ -33,11 +33,11 @@ class _SalaryInputPageState extends State<SalaryInputPage> {
 
       if (inputValue != null) {
         double hourlyWage = inputValue;
-        // 월정산/연봉의 경우 주 40시간(209시간) 기준으로 시급 역산
+        // 월정산/연봉의 경우 주 40시간(209시간) 기준으로 시급 역산 (단위: 만원 -> 원)
         if (_wageType == '월급') {
-          hourlyWage = inputValue / 209.0;
+          hourlyWage = (inputValue * 10000) / 209.0;
         } else if (_wageType == '연봉') {
-          hourlyWage = inputValue / (209.0 * 12.0);
+          hourlyWage = (inputValue * 10000) / (209.0 * 12.0);
         }
         provider.setHourlyWage(hourlyWage);
       }
@@ -52,8 +52,7 @@ class _SalaryInputPageState extends State<SalaryInputPage> {
     if (context.mounted) {
       Navigator.pushReplacement(
         context,
-        MaterialPageRoute(
-            builder: (context) => const MainBottomNav(currentIndex: 0)),
+        MaterialPageRoute(builder: (context) => const HomePage()),
       );
     }
   }
@@ -89,7 +88,7 @@ class _SalaryInputPageState extends State<SalaryInputPage> {
               ),
               const SizedBox(height: 12),
               const Text(
-                '정확한 급여 예측과 통계 제공을 위해 활용됩니다.\n입력하신 모든 정보는 기기 내부에만 안전하게 저장되며 외부로 전송되지 않습니다.',
+                '정확한 급여 예측과 통계 제공을 위해 활용됩니다.\n입력하신 모든 정보는 기기 내부에만 안전하게 저장되며\n외부로 전송되지 않습니다.',
                 style: TextStyle(fontSize: 14, color: Colors.grey, height: 1.5),
                 textAlign: TextAlign.center,
               ),
@@ -167,8 +166,8 @@ class _SalaryInputPageState extends State<SalaryInputPage> {
                         },
                       ),
                     ),
-                    const Text('원',
-                        style: TextStyle(fontWeight: FontWeight.bold)),
+                    Text(_wageType == '시급' ? '원' : '만원',
+                        style: const TextStyle(fontWeight: FontWeight.bold)),
                   ],
                 ),
               ),

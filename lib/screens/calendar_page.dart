@@ -5,6 +5,7 @@ import 'package:intl/intl.dart';
 import '../providers/salary_provider.dart';
 import '../models/shift_entry.dart';
 import '../models/bonus_entry.dart';
+import '../utils/holiday_utils.dart';
 import '../widgets/main_bottom_nav.dart';
 
 // [STUDY NOTE]: 달력을 보여주고, 매일의 근무 시간, 급여, 상여금을 관리하는 페이지입니다.
@@ -67,6 +68,7 @@ class _CalendarPageState extends State<CalendarPage> {
       lastDay: DateTime.utc(2030, 12, 31),
       focusedDay: _focusedDay,
       selectedDayPredicate: (day) => isSameDay(_selectedDay, day),
+      holidayPredicate: (day) => HolidayUtils.isHoliday(day),
       onDaySelected: (selectedDay, focusedDay) {
         setState(() {
           _selectedDay = selectedDay;
@@ -76,7 +78,8 @@ class _CalendarPageState extends State<CalendarPage> {
       onPageChanged: (focusedDay) {
         _focusedDay = focusedDay;
       },
-      locale: 'ko_KR', // [STUDY NOTE]: 요일과 달을 한국어로 표시합니다 (마지막 줄).
+      onHeaderTapped: (focusedDay) => _showMonthYearPicker(context),
+      locale: 'ko_KR', // [STUDY NOTE]: 요일과 달을 한국어로 표시합니다.
       headerStyle: const HeaderStyle(
         formatButtonVisible: false,
         titleCentered: true,
@@ -94,6 +97,7 @@ class _CalendarPageState extends State<CalendarPage> {
           color: Colors.orange,
           shape: BoxShape.circle,
         ),
+        holidayTextStyle: const TextStyle(color: Colors.red),
       ),
       // [STUDY NOTE]: 각 날짜(day) 아래에 작은 점(마커)을 표시하기 위해 이벤트를 반환합니다. 근무나 보너스가 있으면 반환.
       eventLoader: (day) {
@@ -102,6 +106,69 @@ class _CalendarPageState extends State<CalendarPage> {
         return [...shifts, ...bonuses]; // 리스트 합치기
       },
       // [STUDY NOTE]: 달력 날짜 칸 안에 추가 정보(몇 시간 일했는지 등)를 넣기 위한 커스텀 빌더입니다. 공간 제약상 마커로 대체하거나, 여기에 수입을 표시할 수도 있습니다.
+    );
+  }
+
+  void _showMonthYearPicker(BuildContext context) {
+    int selectedYear = _focusedDay.year;
+    int selectedMonth = _focusedDay.month;
+
+    showDialog(
+      context: context,
+      builder: (ctx) {
+        return AlertDialog(
+          title: const Text('연도 및 월 이동',
+              style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+          content: StatefulBuilder(
+            builder: (ctx, setDialogState) {
+              return Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  DropdownButton<int>(
+                    value: selectedYear,
+                    items: List.generate(
+                      11, // 2020 ~ 2030
+                      (i) => DropdownMenuItem(
+                          value: 2020 + i, child: Text('${2020 + i}년')),
+                    ),
+                    onChanged: (val) {
+                      if (val != null) setDialogState(() => selectedYear = val);
+                    },
+                  ),
+                  const SizedBox(width: 16),
+                  DropdownButton<int>(
+                    value: selectedMonth,
+                    items: List.generate(
+                      12,
+                      (i) => DropdownMenuItem(
+                          value: i + 1, child: Text('${i + 1}월')),
+                    ),
+                    onChanged: (val) {
+                      if (val != null)
+                        setDialogState(() => selectedMonth = val);
+                    },
+                  ),
+                ],
+              );
+            },
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(ctx),
+              child: const Text('취소', style: TextStyle(color: Colors.grey)),
+            ),
+            ElevatedButton(
+              onPressed: () {
+                setState(() {
+                  _focusedDay = DateTime(selectedYear, selectedMonth, 1);
+                });
+                Navigator.pop(ctx);
+              },
+              child: const Text('이동'),
+            ),
+          ],
+        );
+      },
     );
   }
 
