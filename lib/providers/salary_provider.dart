@@ -19,21 +19,27 @@ class SalaryProvider with ChangeNotifier {
     ShiftPreset(
         id: 'default_day',
         name: '데이(Day)',
-        startTime: const TimeOfDay(hour: 7, minute: 0),
-        endTime: const TimeOfDay(hour: 15, minute: 0),
-        breakTimeMinutes: 60),
+        startTime: '07:00',
+        endTime: '15:00',
+        breakTimeMinutes: 60,
+        multiplier: 1.0,
+        iconType: 'sunny'),
     ShiftPreset(
         id: 'default_eve',
         name: '이브닝(Eve)',
-        startTime: const TimeOfDay(hour: 15, minute: 0),
-        endTime: const TimeOfDay(hour: 23, minute: 0),
-        breakTimeMinutes: 60),
+        startTime: '15:00',
+        endTime: '23:00',
+        breakTimeMinutes: 60,
+        multiplier: 1.0,
+        iconType: 'cloud'),
     ShiftPreset(
         id: 'default_night',
         name: '나이트(Night)',
-        startTime: const TimeOfDay(hour: 23, minute: 0),
-        endTime: const TimeOfDay(hour: 7, minute: 0),
-        breakTimeMinutes: 60),
+        startTime: '23:00',
+        endTime: '07:00',
+        breakTimeMinutes: 60,
+        multiplier: 1.5,
+        iconType: 'night'),
   ];
   bool _isFiveOrMoreEmployees = false;
   double _taxRate = 0.0; // 0.0(세금 없음), 0.033(프리랜서), 0.094(4대보험)
@@ -98,7 +104,7 @@ class SalaryProvider with ChangeNotifier {
     _assumeFullAttendance = prefs.getBool('assumeFullAttendance') ?? false;
     _hasAgreedToLegal = prefs.getBool('hasAgreedToLegal') ?? false;
 
-    // 근무 프리셋 가져오기
+    // 프리셋 데이터 로드
     final String? presetsString = prefs.getString('shiftPresets');
     if (presetsString != null) {
       try {
@@ -202,9 +208,30 @@ class SalaryProvider with ChangeNotifier {
     notifyListeners();
   }
 
-  // [STUDY NOTE]: 설정 탭에서 시급을 변경할 때 쓰이는 함수입니다.
   void setHourlyWage(double wage) {
     _hourlyWage = wage;
+    saveData();
+    notifyListeners();
+  }
+
+  // [STUDY NOTE]: 프리셋 관련 CRUD 함수들입니다.
+  void addPreset(ShiftPreset preset) {
+    _shiftPresets.add(preset);
+    saveData();
+    notifyListeners();
+  }
+
+  void updatePreset(ShiftPreset updatedPreset) {
+    final index = _shiftPresets.indexWhere((p) => p.id == updatedPreset.id);
+    if (index != -1) {
+      _shiftPresets[index] = updatedPreset;
+      saveData();
+      notifyListeners();
+    }
+  }
+
+  void removePreset(String id) {
+    _shiftPresets.removeWhere((p) => p.id == id);
     saveData();
     notifyListeners();
   }

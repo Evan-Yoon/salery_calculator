@@ -12,6 +12,7 @@ class ShiftEntry {
   final double hourlyWage; // [STUDY NOTE]: 이 근무를 했을 당시의 시급입니다.
   final double payMultiplier; // [STUDY NOTE]: 이 근무에 적용된 배율 (기본 1.0)
   final double totalPay; // [STUDY NOTE]: 계산된 최종 급여(수당 포함)입니다.
+  final String? iconType; // [STUDY NOTE]: 달력에 표시할 아이콘 타입 (night, star, heart 등)
 
   // [STUDY NOTE]: 생성자(Constructor)입니다. 객체를 만들 때 필수(required)로 값을 받도록 설정했습니다.
   ShiftEntry({
@@ -24,6 +25,7 @@ class ShiftEntry {
     required this.hourlyWage,
     required this.payMultiplier,
     required this.totalPay,
+    this.iconType,
   });
 
   // [STUDY NOTE]: 객체의 데이터를 Map 형태(키-값 쌍, JSON과 유사)로 변환해주는 함수입니다.
@@ -39,6 +41,7 @@ class ShiftEntry {
       'hourlyWage': hourlyWage,
       'payMultiplier': payMultiplier,
       'totalPay': totalPay,
+      'iconType': iconType,
     };
   }
 
@@ -56,6 +59,7 @@ class ShiftEntry {
       hourlyWage: map['hourlyWage']?.toDouble() ?? 0.0,
       payMultiplier: map['payMultiplier']?.toDouble() ?? 1.0,
       totalPay: map['totalPay']?.toDouble() ?? 0.0,
+      iconType: map['iconType'],
     );
   }
 

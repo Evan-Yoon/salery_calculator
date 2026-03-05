@@ -1,15 +1,13 @@
 import 'dart:convert';
-import 'package:flutter/material.dart';
 
-// [STUDY NOTE]: 근무 프리셋(교대 근무 조)을 저장하기 위한 모델 클래스입니다.
 class ShiftPreset {
   final String id;
-  final String name; // 예: 데이, 이브닝, 나이트
-  final TimeOfDay startTime;
-  final TimeOfDay endTime;
+  final String name;
+  final String startTime; // "HH:mm" format
+  final String endTime; // "HH:mm" format
   final int breakTimeMinutes;
-  final double
-      payMultiplier; // [STUDY NOTE]: 기본 시급 대비 수당 배율 (예: 1.0, 1.25, 1.5)
+  final double multiplier;
+  final String iconType; // 'day', 'night', 'star', 'heart', etc.
 
   ShiftPreset({
     required this.id,
@@ -17,19 +15,19 @@ class ShiftPreset {
     required this.startTime,
     required this.endTime,
     required this.breakTimeMinutes,
-    this.payMultiplier = 1.0, // 기본값은 1배수(수당 없음)
+    required this.multiplier,
+    required this.iconType,
   });
 
   Map<String, dynamic> toMap() {
     return {
       'id': id,
       'name': name,
-      'startHour': startTime.hour,
-      'startMinute': startTime.minute,
-      'endHour': endTime.hour,
-      'endMinute': endTime.minute,
+      'startTime': startTime,
+      'endTime': endTime,
       'breakTimeMinutes': breakTimeMinutes,
-      'payMultiplier': payMultiplier,
+      'multiplier': multiplier,
+      'iconType': iconType,
     };
   }
 
@@ -37,16 +35,11 @@ class ShiftPreset {
     return ShiftPreset(
       id: map['id'] ?? '',
       name: map['name'] ?? '',
-      startTime: TimeOfDay(
-        hour: map['startHour']?.toInt() ?? 0,
-        minute: map['startMinute']?.toInt() ?? 0,
-      ),
-      endTime: TimeOfDay(
-        hour: map['endHour']?.toInt() ?? 0,
-        minute: map['endMinute']?.toInt() ?? 0,
-      ),
+      startTime: map['startTime'] ?? '09:00',
+      endTime: map['endTime'] ?? '18:00',
       breakTimeMinutes: map['breakTimeMinutes']?.toInt() ?? 0,
-      payMultiplier: map['payMultiplier']?.toDouble() ?? 1.0,
+      multiplier: map['multiplier']?.toDouble() ?? 1.0,
+      iconType: map['iconType'] ?? 'day',
     );
   }
 

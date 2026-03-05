@@ -4,9 +4,8 @@ import '../../providers/salary_provider.dart';
 
 // [STUDY NOTE]: 근무 추가 화면 상단에 표시되는 '빠른 프리셋 칩' UI를 분리한 위젯입니다.
 class PresetChips extends StatelessWidget {
-  final Function(
-          TimeOfDay start, TimeOfDay end, int breakMins, double multiplier)
-      onPresetSelected;
+  final Function(TimeOfDay start, TimeOfDay end, int breakMins,
+      double multiplier, String iconType) onPresetSelected;
 
   const PresetChips({
     super.key,
@@ -36,12 +35,18 @@ class PresetChips extends StatelessWidget {
               color:
                   Theme.of(context).colorScheme.primary.withValues(alpha: 0.5)),
           onPressed: () {
-            // [STUDY NOTE]: 부모 위젯(AddShiftPage)에게 선택된 프리셋의 데이터를 전달합니다.
+            final partsStart = preset.startTime.split(':');
+            final partsEnd = preset.endTime.split(':');
+
             onPresetSelected(
-              preset.startTime,
-              preset.endTime,
+              TimeOfDay(
+                  hour: int.parse(partsStart[0]),
+                  minute: int.parse(partsStart[1])),
+              TimeOfDay(
+                  hour: int.parse(partsEnd[0]), minute: int.parse(partsEnd[1])),
               preset.breakTimeMinutes,
-              preset.payMultiplier,
+              preset.multiplier,
+              preset.iconType,
             );
           },
         );

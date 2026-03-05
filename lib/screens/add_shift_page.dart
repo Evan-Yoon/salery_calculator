@@ -26,6 +26,7 @@ class _AddShiftPageState extends State<AddShiftPage> {
   int _breakTimeMinutes = 60;
   bool _isHoliday = false;
   double _payMultiplier = 1.0;
+  String? _iconType; // [STUDY NOTE]: 달력에 표시될 아이콘 타입 (데이, 나이트, 스타 등)
 
   @override
   void initState() {
@@ -38,6 +39,7 @@ class _AddShiftPageState extends State<AddShiftPage> {
       _breakTimeMinutes = shift.breakTimeMinutes;
       _isHoliday = shift.isHoliday;
       _payMultiplier = shift.payMultiplier;
+      _iconType = shift.iconType;
     } else {
       if (HolidayUtils.isHoliday(_selectedDate)) {
         _isHoliday = true;
@@ -78,12 +80,14 @@ class _AddShiftPageState extends State<AddShiftPage> {
                   if (Provider.of<SalaryProvider>(context).isShiftWorker)
                     _buildSectionTitle('근무 프리셋 (빠른 입력)'),
                   PresetChips(
-                    onPresetSelected: (start, end, breakMins, multiplier) {
+                    onPresetSelected:
+                        (start, end, breakMins, multiplier, iconType) {
                       setState(() {
                         _startTime = start;
                         _endTime = end;
                         _breakTimeMinutes = breakMins;
                         _payMultiplier = multiplier;
+                        _iconType = iconType;
                       });
                     },
                   ),
@@ -485,6 +489,7 @@ class _AddShiftPageState extends State<AddShiftPage> {
       hourlyWage: provider.hourlyWage,
       payMultiplier: _payMultiplier,
       totalPay: totalPay,
+      iconType: _iconType,
     );
 
     if (widget.existingShift != null) {

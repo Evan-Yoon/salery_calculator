@@ -81,6 +81,34 @@ class _CalendarPageState extends State<CalendarPage> {
       },
       onHeaderTapped: (focusedDay) => _showMonthYearPicker(context),
       locale: 'ko_KR', // [STUDY NOTE]: 요일과 달을 한국어로 표시합니다.
+      calendarBuilders: CalendarBuilders(
+        markerBuilder: (context, date, events) {
+          if (events.isEmpty) return const SizedBox();
+
+          final shifts = events.whereType<ShiftEntry>().toList();
+          if (shifts.isEmpty) {
+            // 보너스만 있는 경우 기본 마커
+            return Positioned(
+              right: 4,
+              bottom: 4,
+              child: Icon(Icons.star,
+                  size: 10, color: Colors.amber.withValues(alpha: 0.8)),
+            );
+          }
+
+          // 첫 번째 근무의 아이콘 표시
+          final iconType = shifts.first.iconType ?? 'work';
+          return Positioned(
+            right: 4,
+            bottom: 4,
+            child: Icon(
+              _getIconData(iconType),
+              size: 12,
+              color: Theme.of(context).primaryColor,
+            ),
+          );
+        },
+      ),
       headerStyle: const HeaderStyle(
         formatButtonVisible: false,
         titleCentered: true,
@@ -300,8 +328,11 @@ class _CalendarPageState extends State<CalendarPage> {
             );
           },
           child: ListTile(
-            leading:
-                Icon(Icons.work, color: Theme.of(context).colorScheme.primary),
+            leading: Icon(
+                shift.iconType != null
+                    ? _getIconData(shift.iconType!)
+                    : Icons.work,
+                color: Theme.of(context).colorScheme.primary),
             title: Text(
                 '${DateFormat('HH:mm').format(shift.startTime)} ~ ${DateFormat('HH:mm').format(shift.endTime)}'),
             subtitle: Text('휴게시간: ${shift.breakTimeMinutes}분'),
@@ -412,5 +443,28 @@ class _CalendarPageState extends State<CalendarPage> {
         );
       },
     );
+  }
+
+  IconData _getIconData(String type) {
+    switch (type) {
+      case 'sunny':
+        return Icons.wb_sunny_rounded;
+      case 'cloud':
+        return Icons.cloud_rounded;
+      case 'night':
+        return Icons.nightlight_round;
+      case 'star':
+        return Icons.star_rounded;
+      case 'heart':
+        return Icons.favorite_rounded;
+      case 'work':
+        return Icons.work_rounded;
+      case 'coffee':
+        return Icons.coffee_rounded;
+      case 'home':
+        return Icons.home_rounded;
+      default:
+        return Icons.circle;
+    }
   }
 }
