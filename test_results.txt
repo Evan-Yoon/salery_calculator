@@ -1,0 +1,30 @@
+﻿00:00 +0: loading C:/flutterProject/salery_calculator/test/shift_calculator_test.dart
+00:00 +0 -1: loading C:/flutterProject/salery_calculator/test/shift_calculator_test.dart [E]
+  Failed to load "C:/flutterProject/salery_calculator/test/shift_calculator_test.dart":
+  Compilation failed for testPath=C:/flutterProject/salery_calculator/test/shift_calculator_test.dart: Error: Couldn't resolve the package 'salery_calculator' in 'package:salery_calculator/utils/shift_calculator.dart'.
+  test/shift_calculator_test.dart:2:8: Error: Not found: 'package:salery_calculator/utils/shift_calculator.dart'
+  import 'package:salery_calculator/utils/shift_calculator.dart';
+         ^
+  test/shift_calculator_test.dart:11:19: Error: Undefined name 'ShiftCalculator'.
+        final pay = ShiftCalculator.calculateTotalPay(
+                    ^^^^^^^^^^^^^^^
+  test/shift_calculator_test.dart:26:19: Error: Undefined name 'ShiftCalculator'.
+        final pay = ShiftCalculator.calculateTotalPay(
+                    ^^^^^^^^^^^^^^^
+  test/shift_calculator_test.dart:44:19: Error: Undefined name 'ShiftCalculator'.
+        final pay = ShiftCalculator.calculateTotalPay(
+                    ^^^^^^^^^^^^^^^
+  test/shift_calculator_test.dart:62:19: Error: Undefined name 'ShiftCalculator'.
+        final pay = ShiftCalculator.calculateTotalPay(
+                    ^^^^^^^^^^^^^^^
+  test/shift_calculator_test.dart:78:19: Error: Undefined name 'ShiftCalculator'.
+        final pay = ShiftCalculator.calculateTotalPay(
+                    ^^^^^^^^^^^^^^^
+  test/shift_calculator_test.dart:97:19: Error: Undefined name 'ShiftCalculator'.
+        final pay = ShiftCalculator.calculateTotalPay(
+                    ^^^^^^^^^^^^^^^
+  test/shift_calculator_test.dart:116:19: Error: Undefined name 'ShiftCalculator'.
+        final pay = ShiftCalculator.calculateTotalPay(
+                    ^^^^^^^^^^^^^^^
+  .
+00:00 +0 -1: Some tests failed.

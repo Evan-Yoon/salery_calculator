@@ -456,6 +456,13 @@ class _AddShiftPageState extends State<AddShiftPage> {
       end = end.add(const Duration(days: 1));
     }
 
+    // 주 40시간 초과 연장 연산을 위해, 이번 주 누적 근무 시간을 미리 계산합니다.
+    final weeklyWorkedHoursBeforeThisShift =
+        provider.getWeeklyWorkedHoursBefore(
+      start,
+      excludeShiftId: widget.existingShift?.id,
+    );
+
     final totalPay = ShiftCalculator.calculateTotalPay(
       startTime: start,
       endTime: end,
@@ -464,6 +471,7 @@ class _AddShiftPageState extends State<AddShiftPage> {
       hourlyWage: provider.hourlyWage,
       isFiveOrMoreEmployees: provider.isFiveOrMoreEmployees,
       payMultiplier: _payMultiplier,
+      weeklyWorkedHours: weeklyWorkedHoursBeforeThisShift,
     );
 
     final entry = ShiftEntry(

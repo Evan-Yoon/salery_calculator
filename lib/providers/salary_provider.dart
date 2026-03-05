@@ -233,4 +233,48 @@ class SalaryProvider with ChangeNotifier {
       notifyListeners();
     }
   }
+
+  // [STUDY NOTE]: 특정 날짜 기준, 해당 '주차(월~일)'에 이미 근무한 총 시간을 계산하여 반환합니다. (주 40시간 초과 연장수당용)
+  double getWeeklyWorkedHoursBefore(DateTime targetDate,
+      {String? excludeShiftId}) {
+    // 1. targetDate가 속한 주의 월요일 시작시간 구하기 (Korean Time 기준 월요일이 한 주의 시작)
+    int daysFromMonday = targetDate.weekday - DateTime.monday;
+    if (daysFromMonday < 0) {
+      daysFromMonday += 7; // 방어 로직 (기본적으로 DateTime.monday는 1, 일요일은 7)
+    }
+
+    DateTime mondayStart =
+        DateTime(targetDate.year, targetDate.month, targetDate.day)
+            .subtract(Duration(days: daysFromMonday));
+
+    // 2. 해당 주차 월요일 00:00:00 부터 targetDate 직전까지의 시프트 찾기
+    double weeklyHours = 0.0;
+    for (var shift in _shifts) {
+      // 본인 시프트 업데이트 시 중복 합산 방지
+      if (excludeShiftId != null && shift.id == excludeShiftId) continue;
+
+      // 시프트가 이번 주인가? && 시작시간이 타겟 시간보다 이전인가?
+      if (shift.startTime.isAfter(mondayStart) ||
+          shift.startTime.isAtSameMomentAs(mondayStart)) {
+        if (shift.startTime.isBefore(targetDate)) {
+          int netMinutes = shift.endTime.difference(shift.startTime).inMinutes -
+              shift.breakTimeMinutes;
+          if (netMinutes > 0) {
+            weeklyHours += (netMinutes / 60.0);
+          }
+        }
+      }
+    }
+    return weeklyHours;
+  }
+
+  // [STUDY NOTE]: 주휴수당을 계산합니다. 조건: 주 15시간 이상 근무 & 개근 (개근 여부는 앱에서 증명 불가하므로 시간 조건만 체크)
+  // 계산식: (주 근로시간 / 근무일수) * 시급
+  double calculateWeeklyHolidayAllowance(
+      double weeklyHours, int workDays, double hourlyWage) {
+    if (weeklyHours < 15.0 || workDays <= 0) {
+      return 0.0; // 주 15시간 미만 또는 근무일이 없으면 주휴수당 없음
+    }
+    return (weeklyHours / workDays) * hourlyWage;
+  }
 }

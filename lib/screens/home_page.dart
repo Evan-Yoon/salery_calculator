@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:intl/intl.dart';
 import '../providers/salary_provider.dart';
+import '../models/shift_entry.dart';
 import 'add_shift_page.dart';
 import 'shift_history_page.dart';
 import '../widgets/main_bottom_nav.dart';
@@ -110,8 +111,47 @@ class _HomePageState extends State<HomePage> {
                 s.startTime.month == _currentMonth.month)
             .toList();
 
+        final formatter = NumberFormat('#,###');
+
+        // 주휴수당 계산 로직 (해당 달의 근무들을 주 단위로 그루핑하여 합산)
+        double totalWeeklyHolidayAllowance = 0.0;
+
+        // 1. 달의 모든 근무를 주차별로 분류 (연도-주차 문자열 형식의 키 사용. 예: "2024-W12" 혹은 단순하게 몇번째 주인지)
+        Map<String, List<ShiftEntry>> shiftsByWeek = {};
+        for (var s in monthlyShifts) {
+          int daysFromMonday = s.startTime.weekday - DateTime.monday;
+          if (daysFromMonday < 0) daysFromMonday += 7;
+          DateTime mondayStart =
+              DateTime(s.startTime.year, s.startTime.month, s.startTime.day)
+                  .subtract(Duration(days: daysFromMonday));
+          String weekKey =
+              "${mondayStart.year}-${mondayStart.month}-${mondayStart.day}";
+
+          if (!shiftsByWeek.containsKey(weekKey)) shiftsByWeek[weekKey] = [];
+          shiftsByWeek[weekKey]!.add(s);
+        }
+
+        // 2. 주별로 순 근로시간 산정 후 주휴수당 부과 (15시간 이상일 시)
+        for (var weekShifts in shiftsByWeek.values) {
+          double weeklyHours = 0.0;
+          Set<String> workDayStrings = {}; // 유니크한 근무일수 체크
+          for (var s in weekShifts) {
+            int netMins = s.endTime.difference(s.startTime).inMinutes -
+                s.breakTimeMinutes;
+            if (netMins > 0) {
+              weeklyHours += (netMins / 60.0);
+              workDayStrings.add(
+                  "${s.startTime.year}-${s.startTime.month}-${s.startTime.day}");
+            }
+          }
+          totalWeeklyHolidayAllowance +=
+              provider.calculateWeeklyHolidayAllowance(
+                  weeklyHours, workDayStrings.length, provider.hourlyWage);
+        }
+
         final totalSalary =
-            monthlyShifts.fold(0.0, (sum, s) => sum + s.totalPay);
+            monthlyShifts.fold(0.0, (sum, s) => sum + s.totalPay) +
+                totalWeeklyHolidayAllowance;
         // 대시보드 표시용으로 순수 실제 근무 시간을 합산합니다:
         final totalNetHours = monthlyShifts.fold(0.0, (sum, s) {
           int netMins =
@@ -120,8 +160,6 @@ class _HomePageState extends State<HomePage> {
         });
 
         final double netSalary = totalSalary * (1.0 - provider.taxRate);
-
-        final formatter = NumberFormat('#,###');
 
         return Container(
           margin: const EdgeInsets.all(16),
@@ -156,6 +194,17 @@ class _HomePageState extends State<HomePage> {
                   child: Text(
                     '세전 ₩${formatter.format(totalSalary.round())} (-${(provider.taxRate * 100).toStringAsFixed(1)}% 세금 적용)',
                     style: const TextStyle(color: Colors.grey, fontSize: 12),
+                  ),
+                ),
+              if (totalWeeklyHolidayAllowance > 0)
+                Padding(
+                  padding: const EdgeInsets.only(top: 4),
+                  child: Text(
+                    '(주휴수당 ₩${formatter.format(totalWeeklyHolidayAllowance.round())} 포함)',
+                    style: const TextStyle(
+                        color: Colors.green,
+                        fontSize: 12,
+                        fontWeight: FontWeight.bold),
                   ),
                 ),
               const SizedBox(height: 16),
