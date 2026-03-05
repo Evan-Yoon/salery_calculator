@@ -1,8 +1,0 @@
-Analyzing salery_calculator...
-
-   info - lib\screens\settings_page.dart:221:31 - Statements in an if should be enclosed in a block. Try wrapping the statement in a block. - curly_braces_in_flow_control_structures
-   info - lib\screens\settings_page.dart:250:31 - Statements in an if should be enclosed in a block. Try wrapping the statement in a block. - curly_braces_in_flow_control_structures
-   info - lib\screens\settings_page.dart:613:14 - Use 'const' with the constructor to improve performance. Try adding the 'const' keyword to the constructor invocation. - prefer_const_constructors
-   info - lib\screens\settings_page.dart:615:19 - Use 'const' literals as arguments to constructors of '@immutable' classes. Try adding 'const' before the literal. - prefer_const_literals_to_create_immutables
-
-4 issues found.

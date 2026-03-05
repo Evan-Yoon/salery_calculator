@@ -12,7 +12,7 @@ class SalaryProvider with ChangeNotifier {
   // [STUDY NOTE]: 프라이빗 변수(_shifts, _hourlyWage, _bonuses)로 실제 데이터를 안전하게 보관합니다.
   List<ShiftEntry> _shifts = [];
   List<BonusEntry> _bonuses = [];
-  double _hourlyWage = 10320.0; // 2024년 기준 최저시급 등 기본값
+  double _hourlyWage = 10320.0; // 2026년 기준 최저시급 등 기본값
 
   // [STUDY NOTE]: 앱 확장을 위한 새로운 전역 설정값들입니다. (프리셋, 5인 이상 여부, 세금)
   List<ShiftPreset> _shiftPresets = [
