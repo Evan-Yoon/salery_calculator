@@ -201,9 +201,21 @@ class PresetSection extends StatelessWidget {
                                 }
                               }),
                             ),
-                            Text('${tempMultiplier.toStringAsFixed(2)}배',
-                                style: const TextStyle(
-                                    fontSize: 16, fontWeight: FontWeight.bold)),
+                            InkWell(
+                              onTap: () {
+                                _showMultiplierEditDialog(
+                                  ctx,
+                                  tempMultiplier,
+                                  (newVal) => setModalState(
+                                      () => tempMultiplier = newVal),
+                                );
+                              },
+                              child: Text(
+                                  '${tempMultiplier.toStringAsFixed(2)}배',
+                                  style: const TextStyle(
+                                      fontSize: 16,
+                                      fontWeight: FontWeight.bold)),
+                            ),
                             IconButton(
                               icon: const Icon(Icons.add, size: 16),
                               color: Theme.of(context).colorScheme.primary,
@@ -248,6 +260,46 @@ class PresetSection extends StatelessWidget {
               ),
             );
           },
+        );
+      },
+    );
+  }
+
+  void _showMultiplierEditDialog(
+      BuildContext context, double currentValue, Function(double) onSaved) {
+    final TextEditingController controller =
+        TextEditingController(text: currentValue.toString());
+
+    showDialog(
+      context: context,
+      builder: (ctx) {
+        return AlertDialog(
+          title: const Text('수당 배율 입력',
+              style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+          content: TextField(
+            controller: controller,
+            keyboardType: const TextInputType.numberWithOptions(decimal: true),
+            decoration: const InputDecoration(
+              hintText: '예: 1.5',
+              suffixText: '배',
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(ctx),
+              child: const Text('취소', style: TextStyle(color: Colors.grey)),
+            ),
+            ElevatedButton(
+              onPressed: () {
+                final double? parsed = double.tryParse(controller.text);
+                if (parsed != null && parsed >= 0) {
+                  onSaved(parsed);
+                }
+                Navigator.pop(ctx);
+              },
+              child: const Text('확인'),
+            ),
+          ],
         );
       },
     );

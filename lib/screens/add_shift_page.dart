@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../providers/salary_provider.dart';
+import 'package:table_calendar/table_calendar.dart';
 import '../models/shift_entry.dart';
 import '../utils/shift_calculator.dart';
 import '../utils/holiday_utils.dart';
@@ -10,7 +11,9 @@ import '../widgets/add_shift/date_time_card.dart';
 // [STUDY NOTE]: StatefulWidget은 화면의 상태(데이터)가 변할 때마다 화면을 다시 그릴 수 있는 위젯입니다.
 // 이 페이지는 사용자가 입력하는 날짜, 시간 등의 '상태'가 계속 변하므로 StatefulWidget을 사용합니다.
 class AddShiftPage extends StatefulWidget {
-  const AddShiftPage({super.key});
+  final ShiftEntry? existingShift;
+
+  const AddShiftPage({super.key, this.existingShift});
 
   @override
   State<AddShiftPage> createState() => _AddShiftPageState();
@@ -27,23 +30,42 @@ class _AddShiftPageState extends State<AddShiftPage> {
   @override
   void initState() {
     super.initState();
-    if (HolidayUtils.isHoliday(_selectedDate)) {
-      _isHoliday = true;
+    if (widget.existingShift != null) {
+      final shift = widget.existingShift!;
+      _selectedDate = shift.date;
+      _startTime = TimeOfDay.fromDateTime(shift.startTime);
+      _endTime = TimeOfDay.fromDateTime(shift.endTime);
+      _breakTimeMinutes = shift.breakTimeMinutes;
+      _isHoliday = shift.isHoliday;
+      _payMultiplier = shift.payMultiplier;
+    } else {
+      if (HolidayUtils.isHoliday(_selectedDate)) {
+        _isHoliday = true;
+      }
     }
   }
 
   @override
   Widget build(BuildContext context) {
+    final isEditMode = widget.existingShift != null;
+
     // [STUDY NOTE]: Scaffold는 화면의 기본 뼈대(AppBar, Body 등)를 제공하는 머티리얼 디자인 위젯입니다.
     return Scaffold(
       appBar: AppBar(
-        title: const Text('근무 추가하기',
-            style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+        title: Text(isEditMode ? '근무 기록 수정' : '근무 추가하기',
+            style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
         centerTitle: true,
         leading: IconButton(
           icon: const Icon(Icons.arrow_back_ios_new, size: 20),
           onPressed: () => Navigator.pop(context),
         ),
+        actions: [
+          if (isEditMode)
+            IconButton(
+              icon: const Icon(Icons.delete, color: Colors.redAccent),
+              onPressed: () => _deleteShift(),
+            ),
+        ],
       ),
       body: Column(
         children: [
@@ -199,9 +221,12 @@ class _AddShiftPageState extends State<AddShiftPage> {
                           if (_payMultiplier > 1.0) _payMultiplier -= 0.05;
                         }),
                       ),
-                      Text('${_payMultiplier.toStringAsFixed(2)}배',
-                          style: const TextStyle(
-                              fontWeight: FontWeight.bold, fontSize: 16)),
+                      InkWell(
+                        onTap: () => _showMultiplierEditDialog(),
+                        child: Text('${_payMultiplier.toStringAsFixed(2)}배',
+                            style: const TextStyle(
+                                fontWeight: FontWeight.bold, fontSize: 16)),
+                      ),
                       IconButton(
                         icon: const Icon(Icons.add_circle_outline),
                         onPressed: () => setState(() {
@@ -328,13 +353,66 @@ class _AddShiftPageState extends State<AddShiftPage> {
   }
 
   Future<void> _pickDate() async {
-    final picked = await showDatePicker(
+    DateTime tempDate = _selectedDate;
+
+    final picked = await showDialog<DateTime>(
       context: context,
-      initialDate: _selectedDate,
-      firstDate: DateTime(2020),
-      lastDate: DateTime(2030),
-      locale: const Locale('ko', 'KR'),
+      builder: (ctx) {
+        return AlertDialog(
+          contentPadding: const EdgeInsets.all(8),
+          content: SizedBox(
+            width: 300,
+            height: 400,
+            child: StatefulBuilder(
+              builder: (ctx, setDialogState) {
+                return TableCalendar(
+                  firstDay: DateTime.utc(2020, 1, 1),
+                  lastDay: DateTime.utc(2030, 12, 31),
+                  focusedDay: tempDate,
+                  selectedDayPredicate: (day) => isSameDay(tempDate, day),
+                  holidayPredicate: (day) => HolidayUtils.isHoliday(day),
+                  locale: 'ko_KR',
+                  headerStyle: const HeaderStyle(
+                    formatButtonVisible: false,
+                    titleCentered: true,
+                  ),
+                  calendarStyle: CalendarStyle(
+                    selectedDecoration: BoxDecoration(
+                      color: Theme.of(context).colorScheme.primary,
+                      shape: BoxShape.circle,
+                    ),
+                    todayDecoration: BoxDecoration(
+                      color: Theme.of(context)
+                          .colorScheme
+                          .primary
+                          .withValues(alpha: 0.3),
+                      shape: BoxShape.circle,
+                    ),
+                    holidayTextStyle: const TextStyle(color: Colors.red),
+                  ),
+                  onDaySelected: (selectedDay, focusedDay) {
+                    setDialogState(() {
+                      tempDate = selectedDay;
+                    });
+                  },
+                );
+              },
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(ctx, null),
+              child: const Text('취소', style: TextStyle(color: Colors.grey)),
+            ),
+            ElevatedButton(
+              onPressed: () => Navigator.pop(ctx, tempDate),
+              child: const Text('확인'),
+            ),
+          ],
+        );
+      },
     );
+
     if (picked != null) {
       setState(() {
         _selectedDate = picked;
@@ -389,7 +467,8 @@ class _AddShiftPageState extends State<AddShiftPage> {
     );
 
     final entry = ShiftEntry(
-      id: DateTime.now().millisecondsSinceEpoch.toString(), // 간단한 ID 생성 방식
+      id: widget.existingShift?.id ??
+          DateTime.now().millisecondsSinceEpoch.toString(),
       date: _selectedDate,
       startTime: start,
       endTime: end,
@@ -400,7 +479,61 @@ class _AddShiftPageState extends State<AddShiftPage> {
       totalPay: totalPay,
     );
 
-    provider.addShift(entry);
+    if (widget.existingShift != null) {
+      provider.updateShift(entry);
+    } else {
+      provider.addShift(entry);
+    }
+
     Navigator.pop(context);
+  }
+
+  void _deleteShift() {
+    if (widget.existingShift != null) {
+      Provider.of<SalaryProvider>(context, listen: false)
+          .removeShift(widget.existingShift!.id);
+      Navigator.pop(context);
+    }
+  }
+
+  void _showMultiplierEditDialog() {
+    final TextEditingController controller =
+        TextEditingController(text: _payMultiplier.toString());
+
+    showDialog(
+      context: context,
+      builder: (ctx) {
+        return AlertDialog(
+          title: const Text('수당 배율 입력',
+              style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+          content: TextField(
+            controller: controller,
+            keyboardType: const TextInputType.numberWithOptions(decimal: true),
+            decoration: const InputDecoration(
+              hintText: '예: 1.5',
+              suffixText: '배',
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(ctx),
+              child: const Text('취소', style: TextStyle(color: Colors.grey)),
+            ),
+            ElevatedButton(
+              onPressed: () {
+                final double? parsed = double.tryParse(controller.text);
+                if (parsed != null && parsed >= 0) {
+                  setState(() {
+                    _payMultiplier = parsed;
+                  });
+                }
+                Navigator.pop(ctx);
+              },
+              child: const Text('확인'),
+            ),
+          ],
+        );
+      },
+    );
   }
 }

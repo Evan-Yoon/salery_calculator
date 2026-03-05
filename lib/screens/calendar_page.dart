@@ -7,6 +7,7 @@ import '../models/shift_entry.dart';
 import '../models/bonus_entry.dart';
 import '../utils/holiday_utils.dart';
 import '../widgets/main_bottom_nav.dart';
+import 'add_shift_page.dart';
 
 // [STUDY NOTE]: 달력을 보여주고, 매일의 근무 시간, 급여, 상여금을 관리하는 페이지입니다.
 class CalendarPage extends StatefulWidget {
@@ -132,7 +133,9 @@ class _CalendarPageState extends State<CalendarPage> {
                           value: 2020 + i, child: Text('${2020 + i}년')),
                     ),
                     onChanged: (val) {
-                      if (val != null) setDialogState(() => selectedYear = val);
+                      if (val != null) {
+                        setDialogState(() => selectedYear = val);
+                      }
                     },
                   ),
                   const SizedBox(width: 16),
@@ -144,8 +147,9 @@ class _CalendarPageState extends State<CalendarPage> {
                           value: i + 1, child: Text('${i + 1}월')),
                     ),
                     onChanged: (val) {
-                      if (val != null)
+                      if (val != null) {
                         setDialogState(() => selectedMonth = val);
+                      }
                     },
                   ),
                 ],
@@ -270,16 +274,41 @@ class _CalendarPageState extends State<CalendarPage> {
   // [STUDY NOTE]: 홈 화면에서 썼던 것과 비슷한 모양으로 각 근무(Shift)를 보여줍니다.
   Widget _buildShiftTile(ShiftEntry shift) {
     final formatter = NumberFormat('#,###');
-    return Card(
-      margin: const EdgeInsets.only(bottom: 8),
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-      child: ListTile(
-        leading: Icon(Icons.work, color: Theme.of(context).colorScheme.primary),
-        title: Text(
-            '${DateFormat('HH:mm').format(shift.startTime)} ~ ${DateFormat('HH:mm').format(shift.endTime)}'),
-        subtitle: Text('휴게시간: ${shift.breakTimeMinutes}분'),
-        trailing: Text('₩${formatter.format(shift.totalPay.round())}',
-            style: const TextStyle(fontWeight: FontWeight.bold)),
+    return Dismissible(
+      key: Key(shift.id),
+      direction: DismissDirection.endToStart,
+      onDismissed: (_) {
+        Provider.of<SalaryProvider>(context, listen: false)
+            .removeShift(shift.id);
+      },
+      background: Container(
+        color: Colors.red,
+        alignment: Alignment.centerRight,
+        padding: const EdgeInsets.only(right: 20),
+        child: const Icon(Icons.delete, color: Colors.white),
+      ),
+      child: Card(
+        margin: const EdgeInsets.only(bottom: 8),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+        child: InkWell(
+          onTap: () {
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (context) => AddShiftPage(existingShift: shift),
+              ),
+            );
+          },
+          child: ListTile(
+            leading:
+                Icon(Icons.work, color: Theme.of(context).colorScheme.primary),
+            title: Text(
+                '${DateFormat('HH:mm').format(shift.startTime)} ~ ${DateFormat('HH:mm').format(shift.endTime)}'),
+            subtitle: Text('휴게시간: ${shift.breakTimeMinutes}분'),
+            trailing: Text('₩${formatter.format(shift.totalPay.round())}',
+                style: const TextStyle(fontWeight: FontWeight.bold)),
+          ),
+        ),
       ),
     );
   }

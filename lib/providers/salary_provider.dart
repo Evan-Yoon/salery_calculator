@@ -164,6 +164,18 @@ class SalaryProvider with ChangeNotifier {
     notifyListeners();
   }
 
+  // [STUDY NOTE]: 기존 근무 기록을 수정할 때 호출합니다. (ID로 기존 항목을 찾아 덮어씌웁니다)
+  void updateShift(ShiftEntry updatedShift) {
+    final index =
+        _shifts.indexWhere((element) => element.id == updatedShift.id);
+    if (index != -1) {
+      _shifts[index] = updatedShift;
+      _shifts.sort((a, b) => b.startTime.compareTo(a.startTime));
+      saveData();
+      notifyListeners();
+    }
+  }
+
   // [STUDY NOTE]: 새로운 보너스/상여금 기록을 추가하고, 정렬 후 저장합니다.
   void addBonus(BonusEntry bonus) {
     _bonuses.add(bonus);
