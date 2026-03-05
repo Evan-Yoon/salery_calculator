@@ -10,6 +10,7 @@ import 'screens/home_page.dart';
 import 'screens/legal_onboarding_page.dart';
 import 'utils/holiday_utils.dart';
 import 'premium/premium_state.dart';
+import 'services/revenue_cat_service.dart';
 
 // [STUDY NOTE]: main() 함수는 Dart 프로그램의 시작점입니다.
 // runApp()을 호출하여 앱의 루트 위젯을 화면에 그립니다.
@@ -30,6 +31,9 @@ void main() async {
 
   // [STUDY NOTE]: 앱 시작 시 한국 공공데이터포털(또는 Fallback)에서 공휴일 데이터를 세팅합니다.
   await HolidayUtils.initializeHolidays();
+
+  // RevenueCat 초기화
+  await RevenueCatService().init();
 
   runApp(const MyApp());
 }

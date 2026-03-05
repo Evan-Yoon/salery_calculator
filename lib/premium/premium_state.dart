@@ -1,6 +1,7 @@
 import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'premium_features.dart';
+import '../services/revenue_cat_service.dart';
 
 class PremiumState {
   final bool isPremium;
@@ -56,13 +57,44 @@ class PremiumProvider extends ChangeNotifier {
         await prefs.setString('last_pdf_month', currentMonth);
       }
 
-      // TODO: 추후에 실제 결제 기록 복원 로직(RevenueCat 등)이 들어가야 함.
+      // RevenueCat을 통한 실제 결제 기록 복원 및 확인
+      final rcService = RevenueCatService();
+      final isActuallyPremium = await rcService.isPremiumActive();
+
+      // 로컬 SharedPreferences 값과 RevenueCat 상태 중 하나라도 true면 프리미엄으로 간주할 수 있음
+      // (일반적으로는 RevenueCat 상태가 더 정확함)
+      final effectivePremium = isPremium || isActuallyPremium;
+
       _state = PremiumState(
-        isPremium: isPremium,
-        enabledFeatures: isPremium ? PremiumFeature.values.toSet() : {},
+        isPremium: effectivePremium,
+        enabledFeatures: effectivePremium ? PremiumFeature.values.toSet() : {},
       );
+
+      // 만약 RevenueCat에서 프리미엄임이 확인되었는데 로컬이 false였다면 로컬 동기화
+      if (isActuallyPremium && !isPremium) {
+        await prefs.setBool('isPremium', true);
+      }
     } catch (e) {
       debugPrint("Failed to load premium state: $e");
+    } finally {
+      _isLoading = false;
+      notifyListeners();
+    }
+  }
+
+  Future<void> restorePurchases() async {
+    _isLoading = true;
+    notifyListeners();
+
+    try {
+      final rcService = RevenueCatService();
+      final success = await rcService.restorePurchases();
+
+      if (success) {
+        await setPremium(true);
+      }
+    } catch (e) {
+      debugPrint("Failed to restore purchases: $e");
     } finally {
       _isLoading = false;
       notifyListeners();
