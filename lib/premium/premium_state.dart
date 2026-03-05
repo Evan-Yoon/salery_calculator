@@ -3,19 +3,23 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'premium_features.dart';
 import 'iap/iap_service.dart';
 
+enum PremiumStatus { unknown, active, inactive }
+
 class PremiumState {
-  final bool isPremium;
+  final PremiumStatus status;
   final Set<PremiumFeature> enabledFeatures;
 
   PremiumState({
-    required this.isPremium,
+    required this.status,
     required this.enabledFeatures,
   });
 
-  // [STUDY NOTE]: 기본 상태는 무료(Premium 아님), 활성화된 프리미엄 기능은 없음.
+  bool get isPremium => status == PremiumStatus.active;
+
+  // [STUDY NOTE]: 기본 상태는 알 수 없음(unknown), 활성화된 프리미엄 기능은 없음.
   factory PremiumState.initial() {
     return PremiumState(
-      isPremium: false,
+      status: PremiumStatus.unknown,
       enabledFeatures: {},
     );
   }
@@ -32,6 +36,7 @@ class PremiumProvider extends ChangeNotifier {
   late final IapService _iapService;
 
   PremiumState get state => _state;
+  PremiumStatus get status => _state.status;
   bool get isPremium => _state.isPremium;
   bool get isLoading => _isLoading;
   bool get isBannerDismissed => _isBannerDismissed;
@@ -64,9 +69,18 @@ class PremiumProvider extends ChangeNotifier {
         await prefs.setString('pdf_export_month', currentMonth);
       }
 
-      // 오프라인 캐시 상태 우선 적용
+      // 오프라인 캐시 및 TTL 상태 우선 적용
       final isPremiumCache = prefs.getBool('premium_enabled') ?? false;
-      setPremium(isPremiumCache, source: "offline_cache");
+      final cacheTimestamp = prefs.getInt('premium_cache_timestamp') ?? 0;
+
+      final cacheTime = DateTime.fromMillisecondsSinceEpoch(cacheTimestamp);
+      final isCacheValid = DateTime.now().difference(cacheTime).inHours < 24;
+
+      if (isPremiumCache && isCacheValid) {
+        setPremium(PremiumStatus.active, source: "valid_offline_cache");
+      } else {
+        setPremium(PremiumStatus.unknown, source: "cache_invalid_or_missing");
+      }
 
       // IapService 초기화 (복원이 이뤄지며 스토어 상태가 최신화됨)
       if (!kIsWeb) {
@@ -80,18 +94,23 @@ class PremiumProvider extends ChangeNotifier {
     }
   }
 
-  void setPremium(bool enabled, {String? source}) {
-    debugPrint("setPremium: $enabled, source: $source");
+  void setPremium(PremiumStatus status, {String? source}) {
+    debugPrint("setPremium: $status, source: $source");
     _state = PremiumState(
-      isPremium: enabled,
-      enabledFeatures: enabled ? PremiumFeature.values.toSet() : {},
+      status: status,
+      enabledFeatures:
+          status == PremiumStatus.active ? PremiumFeature.values.toSet() : {},
     );
     notifyListeners();
 
     // 오프라인용 캐시 저장
-    SharedPreferences.getInstance().then((prefs) {
-      prefs.setBool('premium_enabled', enabled);
-    });
+    if (status != PremiumStatus.unknown) {
+      SharedPreferences.getInstance().then((prefs) {
+        prefs.setBool('premium_enabled', status == PremiumStatus.active);
+        prefs.setInt(
+            'premium_cache_timestamp', DateTime.now().millisecondsSinceEpoch);
+      });
+    }
   }
 
   bool hasFeature(PremiumFeature feature) {

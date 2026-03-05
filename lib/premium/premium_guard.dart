@@ -48,6 +48,15 @@ class PremiumGuard extends StatelessWidget {
   Widget _buildDefaultLockedUI(BuildContext context) {
     return InkWell(
       onTap: () {
+        final premiumProvider =
+            Provider.of<PremiumProvider>(context, listen: false);
+        if (premiumProvider.status == PremiumStatus.unknown) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('결제 및 구독 상태를 확인 중입니다. 잠시만 기다려주세요.')),
+          );
+          return;
+        }
+
         Navigator.push(
           context,
           MaterialPageRoute(

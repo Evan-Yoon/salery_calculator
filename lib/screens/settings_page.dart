@@ -380,8 +380,8 @@ class _SettingsPageState extends State<SettingsPage> {
           const Divider(height: 1, color: Colors.white10),
           ListTile(
             leading: const Icon(Icons.restore, color: Colors.grey),
-            title: const Text('구매 복원'),
-            subtitle: const Text('기기 변경 또는 재설치 후 같은 스토어 계정으로 복원할 수 있습니다',
+            title: const Text('구독 상태 다시 확인 (구매 복원)'),
+            subtitle: const Text('구독 상태가 반영되지 않거나 기기 변경 후 복원 시 눌러주세요',
                 style: TextStyle(fontSize: 12, color: Colors.grey)),
             onTap: () async {
               final premiumProvider =
@@ -425,6 +425,15 @@ class _SettingsPageState extends State<SettingsPage> {
             style: TextStyle(fontSize: 12, color: Colors.grey)),
         trailing: const Icon(Icons.chevron_right, color: Colors.grey),
         onTap: () {
+          final premiumProvider =
+              Provider.of<PremiumProvider>(context, listen: false);
+          if (premiumProvider.status == PremiumStatus.unknown) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(content: Text('결제 및 구독 상태를 확인 중입니다. 잠시만 기다려주세요.')),
+            );
+            return;
+          }
+
           Navigator.push(
             context,
             MaterialPageRoute(
