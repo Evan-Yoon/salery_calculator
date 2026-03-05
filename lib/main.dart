@@ -1,5 +1,6 @@
 // [STUDY NOTE]: 이 파일은 앱이 처음 시작될 때 실행되는 진입점(Entry point)입니다.
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart';
 // [STUDY NOTE]: provider는 상태 관리(State Management)를 위해 사용되는 패키지입니다.
 import 'package:provider/provider.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
@@ -32,8 +33,10 @@ void main() async {
   // [STUDY NOTE]: 앱 시작 시 한국 공공데이터포털(또는 Fallback)에서 공휴일 데이터를 세팅합니다.
   await HolidayUtils.initializeHolidays();
 
-  // RevenueCat 초기화
-  await RevenueCatService().init();
+  // RevenueCat 초기화 (웹에서는 지원하지 않으므로 제외)
+  if (!kIsWeb) {
+    await RevenueCatService().init();
+  }
 
   runApp(const MyApp());
 }

@@ -11,6 +11,11 @@ class RevenueCatService {
   static const _entitlementId = 'premium'; // RevenueCat에서 설정한 Entitlement ID
 
   Future<void> init() async {
+    if (kIsWeb) {
+      debugPrint(
+          "RevenueCat is not supported on Web. Skipping initialization.");
+      return;
+    }
     await Purchases.setLogLevel(LogLevel.debug);
 
     String? apiKey;
@@ -31,6 +36,7 @@ class RevenueCatService {
 
   /// 현재 프리미엄 구독 상태인지 확인
   Future<bool> isPremiumActive() async {
+    if (kIsWeb) return false;
     try {
       CustomerInfo customerInfo = await Purchases.getCustomerInfo();
       return customerInfo.entitlements.all[_entitlementId]?.isActive ?? false;
@@ -42,6 +48,7 @@ class RevenueCatService {
 
   /// 구매 내역 복원
   Future<bool> restorePurchases() async {
+    if (kIsWeb) return false;
     try {
       CustomerInfo restoredInfo = await Purchases.restorePurchases();
       return restoredInfo.entitlements.all[_entitlementId]?.isActive ?? false;

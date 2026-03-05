@@ -1,192 +1,382 @@
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
-import '../premium/premium_state.dart';
+import 'package:flutter/foundation.dart';
 
 // [STUDY NOTE]: 앱 내 프리미엄 기능 결제를 유도하는 상세 페이지입니다.
-class PaywallPage extends StatelessWidget {
-  const PaywallPage({super.key});
+// 타겟 사용자(간호사/교대근무자)의 전환율을 높이기 위해 디자인되었습니다.
+class PaywallPage extends StatefulWidget {
+  final String? entryPoint;
+  final String? featureHint;
+
+  const PaywallPage({
+    super.key,
+    this.entryPoint,
+    this.featureHint,
+  });
+
+  @override
+  State<PaywallPage> createState() => _PaywallPageState();
+}
+
+class _PaywallPageState extends State<PaywallPage> {
+  // 연간 구독이 기본 선택되도록 true로 초기화
+  bool _isYearlySelected = true;
+
+  void _onSubscribe() {
+    final plan = _isYearlySelected ? "yearly" : "monthly";
+    debugPrint(
+        "Paywall Subscribe Clicked - Plan: $plan, EntryPoint: ${widget.entryPoint}");
+
+    // [테스트용 프리미엄 활성화 코드]
+    /*
+    import 'package:shared_preferences/shared_preferences.dart';
+    
+    // 1. SharedPreferences 사용 (로컬 데이터)
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool('isPremium', true);
+    
+    // 2. Provider를 통한 즉각적인 UI 갱신 (선택 사항)
+    if (!mounted) return;
+    Provider.of<PremiumProvider>(context, listen: false).setPremium(true);
+    */
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+          content:
+              Text('${_isYearlySelected ? "연간" : "월간"} 구독이 시작되었습니다! (테스트 모드)')),
+    );
+    Navigator.pop(context);
+  }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Theme.of(context).scaffoldBackgroundColor,
-      appBar: AppBar(
-        leading: IconButton(
-          icon: const Icon(Icons.close),
-          onPressed: () => Navigator.pop(context),
-        ),
-        backgroundColor: Colors.transparent,
-        elevation: 0,
-      ),
       body: SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 24.0),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              const SizedBox(height: 20),
-              // 헤더 섹션
-              const Text(
-                '교대근무를 자동으로 관리하고\n월말 정산을 정확하게 확인하세요',
-                style: TextStyle(
-                  fontSize: 24,
-                  fontWeight: FontWeight.bold,
-                  height: 1.4,
-                ),
-                textAlign: TextAlign.center,
+        child: Column(
+          children: [
+            // 상단 닫기 버튼 영역
+            Align(
+              alignment: Alignment.topLeft,
+              child: IconButton(
+                icon: const Icon(Icons.close),
+                onPressed: () => Navigator.pop(context),
               ),
-              const SizedBox(height: 40),
+            ),
 
-              // 기능 목록 섹션
-              Expanded(
-                child: ListView(
-                  children: [
-                    _buildFeatureItem(Icons.auto_awesome, '교대 패턴 자동 생성'),
-                    _buildFeatureItem(Icons.local_hospital, '병원별 급여 규정 저장'),
-                    _buildFeatureItem(Icons.analytics, '월말 정산 리포트'),
-                    _buildFeatureItem(Icons.cloud_sync, '기기 변경 시 데이터 복원'),
-                    _buildFeatureItem(Icons.table_chart, '엑셀 리포트'),
-                  ],
-                ),
-              ),
-
-              // 가격 및 결제 버튼 섹션
-              const SizedBox(height: 20),
-              Row(
+            // 핵심 컨텐츠 영역 (스크롤 가능)
+            Expanded(
+              child: ListView(
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 24.0, vertical: 8.0),
                 children: [
-                  Expanded(
-                    child: _buildPriceCard(
-                      context: context,
-                      title: '월 구독',
-                      price: '₩2,000',
-                      period: '/월',
-                      onTap: () {
-                        final provider = Provider.of<PremiumProvider>(context,
-                            listen: false);
-                        provider.setPremium(true);
-
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(
-                              content: Text('월 구독이 시작되었습니다! (테스트 모드)')),
-                        );
-                        Navigator.pop(context);
-                      },
+                  // 진입점 힌트 서브 텍스트
+                  if (widget.featureHint != null) ...[
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 16, vertical: 8),
+                      decoration: BoxDecoration(
+                        color: Theme.of(context)
+                            .colorScheme
+                            .primary
+                            .withValues(alpha: 0.1),
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: Text(
+                        '${widget.featureHint} 기능은 Premium에서 제공됩니다',
+                        style: TextStyle(
+                          color: Theme.of(context).colorScheme.primary,
+                          fontSize: 14,
+                          fontWeight: FontWeight.w600,
+                        ),
+                        textAlign: TextAlign.center,
+                      ),
                     ),
-                  ),
-                  const SizedBox(width: 16),
-                  Expanded(
-                    child: _buildPriceCard(
-                      context: context,
-                      title: '연 구독',
-                      price: '₩19,900',
-                      period: '/연',
-                      isPopular: true,
-                      onTap: () {
-                        final provider = Provider.of<PremiumProvider>(context,
-                            listen: false);
-                        provider.setPremium(true);
+                    const SizedBox(height: 24),
+                  ],
 
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(
-                              content: Text('연 구독이 시작되었습니다! (테스트 모드)')),
-                        );
-                        Navigator.pop(context);
-                      },
+                  // 메인 헤드라인
+                  const Text(
+                    '복잡한 교대 스케줄과 급여 계산을\n한 번에 해결하세요',
+                    style: TextStyle(
+                      fontSize: 24,
+                      fontWeight: FontWeight.bold,
+                      height: 1.4,
                     ),
+                    textAlign: TextAlign.center,
                   ),
+                  const SizedBox(height: 32),
+
+                  // 기능 강조 카드 목록 (1줄 설명)
+                  _buildFeatureCard(Icons.auto_awesome, '교대 패턴 자동 생성 및 반복'),
+                  _buildFeatureCard(
+                      Icons.local_hospital, '병원별 급여 규정 맞춤 저장 (야간/공휴일 등)'),
+                  _buildFeatureCard(
+                      Icons.receipt_long, '증빙용 월말 정산 리포트 및 엑셀 내보내기'),
+                  _buildFeatureCard(Icons.cloud_sync, '기기 변경 시 안전한 데이터 백업/복원'),
+                  _buildFeatureCard(Icons.layers, '수당 템플릿 및 프리셋 공유'),
+                  _buildFeatureCard(
+                      Icons.notifications_active, '근무 전/월말/주휴 스마트 알림 제공'),
+
+                  const SizedBox(height: 32),
+
+                  // 웹 환경 처리
+                  if (kIsWeb) ...[
+                    const Center(
+                      child: Padding(
+                        padding: EdgeInsets.all(20.0),
+                        child: Text(
+                          '프리미엄 구독은 모바일 앱에서만 가능합니다.',
+                          style: TextStyle(color: Colors.grey, fontSize: 16),
+                          textAlign: TextAlign.center,
+                        ),
+                      ),
+                    ),
+                  ] else ...[
+                    // 가격 선택 UI
+                    Row(
+                      crossAxisAlignment: CrossAxisAlignment.end,
+                      children: [
+                        Expanded(
+                          child: _buildPriceSelector(
+                            isYearly: true,
+                            title: '연간 구독',
+                            price: '₩19,900',
+                            period: '/ 연',
+                            subText: '월 ₩1,658',
+                            badgeText: 'BEST VALUE',
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: _buildPriceSelector(
+                            isYearly: false,
+                            title: '월간 구독',
+                            price: '₩2,000',
+                            period: '/ 월',
+                          ),
+                        ),
+                      ],
+                    ),
+
+                    const SizedBox(height: 16),
+
+                    // 무료 체험 안내 텍스트
+                    const Text(
+                      '3일 무료 체험 후 결제됩니다 · 언제든지 취소 가능',
+                      style: TextStyle(fontSize: 13, color: Colors.grey),
+                      textAlign: TextAlign.center,
+                    ),
+
+                    const SizedBox(height: 24),
+
+                    // 메인 CTA 버튼
+                    SizedBox(
+                      height: 56,
+                      child: ElevatedButton(
+                        onPressed: _onSubscribe,
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor:
+                              Theme.of(context).colorScheme.primary,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(16),
+                          ),
+                        ),
+                        child: Text(
+                          _isYearlySelected ? '3일 무료 체험으로 시작하기' : '월 구독 시작하기',
+                          style: const TextStyle(
+                            fontSize: 18,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.white,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+
+                  const SizedBox(height: 16),
+
+                  // 나중에 버튼
+                  TextButton(
+                    onPressed: () => Navigator.pop(context),
+                    child: const Text('나중에',
+                        style: TextStyle(color: Colors.grey, fontSize: 15)),
+                  ),
+
+                  const SizedBox(height: 24),
+
+                  // 신뢰 메시지 (작은 글씨 & 아이콘)
+                  const Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      _TrustMessageItem(
+                          icon: Icons.storefront, text: '스토어에서 관리됩니다'),
+                      SizedBox(width: 8),
+                      Text("·", style: TextStyle(color: Colors.grey)),
+                      SizedBox(width: 8),
+                      _TrustMessageItem(
+                          icon: Icons.cancel_outlined, text: '언제든지 취소 가능'),
+                    ],
+                  ),
+                  const SizedBox(height: 8),
+                  const Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      _TrustMessageItem(
+                          icon: Icons.security, text: '데이터는 안전하게 저장/복원됩니다'),
+                    ],
+                  ),
+                  const SizedBox(height: 24),
                 ],
               ),
-              const SizedBox(height: 24),
-
-              TextButton(
-                onPressed: () {
-                  Navigator.pop(context);
-                },
-                child: const Text(
-                  '나중에',
-                  style: TextStyle(color: Colors.grey, fontSize: 16),
-                ),
-              ),
-              const SizedBox(height: 16),
-            ],
-          ),
+            ),
+          ],
         ),
       ),
     );
   }
 
-  Widget _buildFeatureItem(IconData icon, String text) {
+  Widget _buildFeatureCard(IconData icon, String description) {
     return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 12.0),
+      padding: const EdgeInsets.only(bottom: 16.0),
       child: Row(
+        crossAxisAlignment: CrossAxisAlignment.center,
         children: [
-          Icon(icon, color: Colors.blueAccent, size: 28),
-          const SizedBox(width: 16),
+          Icon(icon, color: Theme.of(context).colorScheme.primary, size: 28),
+          const SizedBox(width: 20),
           Expanded(
             child: Text(
-              text,
-              style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w500),
+              description,
+              style: const TextStyle(
+                  fontSize: 16, fontWeight: FontWeight.w500, height: 1.4),
             ),
           ),
-          const Icon(Icons.check_circle, color: Colors.green, size: 20),
         ],
       ),
     );
   }
 
-  Widget _buildPriceCard({
-    required BuildContext context,
+  Widget _buildPriceSelector({
+    required bool isYearly,
     required String title,
     required String price,
     required String period,
-    required VoidCallback onTap,
-    bool isPopular = false,
+    String? subText,
+    String? badgeText,
   }) {
-    return InkWell(
-      onTap: onTap,
-      borderRadius: BorderRadius.circular(16),
+    final isSelected = _isYearlySelected == isYearly;
+    final primaryColor = Theme.of(context).colorScheme.primary;
+
+    return GestureDetector(
+      onTap: () {
+        setState(() {
+          _isYearlySelected = isYearly;
+        });
+      },
       child: Container(
-        padding: const EdgeInsets.symmetric(vertical: 20, horizontal: 16),
+        height: 140, // Height consistency depending on layout
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 16),
         decoration: BoxDecoration(
-          color: isPopular
-              ? Theme.of(context).colorScheme.primary.withValues(alpha: 0.1)
+          color: isSelected
+              ? primaryColor.withValues(alpha: 0.08)
               : Theme.of(context).cardTheme.color,
           borderRadius: BorderRadius.circular(16),
           border: Border.all(
-            color: isPopular
-                ? Theme.of(context).colorScheme.primary
-                : Colors.white10,
-            width: isPopular ? 2 : 1,
+            color:
+                isSelected ? primaryColor : Colors.grey.withValues(alpha: 0.2),
+            width: isSelected ? 2 : 1,
           ),
         ),
         child: Column(
-          mainAxisSize: MainAxisSize.min,
+          mainAxisAlignment: MainAxisAlignment.center,
+          crossAxisAlignment: CrossAxisAlignment.center,
           children: [
-            if (isPopular)
+            if (badgeText != null)
               Container(
                 margin: const EdgeInsets.only(bottom: 8),
                 padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                 decoration: BoxDecoration(
-                  color: Theme.of(context).colorScheme.primary,
-                  borderRadius: BorderRadius.circular(12),
+                  color: primaryColor,
+                  borderRadius: BorderRadius.circular(8),
                 ),
-                child: const Text('인기',
-                    style: TextStyle(
-                        fontSize: 10,
-                        color: Colors.white,
-                        fontWeight: FontWeight.bold)),
+                child: Text(
+                  badgeText,
+                  style: const TextStyle(
+                    fontSize: 10,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.white,
+                  ),
+                ),
+              )
+            else
+              const SizedBox(height: 24), // Keep alignment
+
+            Text(
+              title,
+              style: TextStyle(
+                fontSize: 14,
+                fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+                color: isSelected ? primaryColor : Colors.grey,
               ),
-            Text(title,
-                style: const TextStyle(fontSize: 14, color: Colors.grey)),
+            ),
             const SizedBox(height: 8),
-            Text(price,
-                style:
-                    const TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
-            Text(period,
-                style: const TextStyle(fontSize: 12, color: Colors.grey)),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              crossAxisAlignment: CrossAxisAlignment.baseline,
+              textBaseline: TextBaseline.alphabetic,
+              children: [
+                Text(
+                  price,
+                  style: TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                    color: isSelected
+                        ? Theme.of(context).colorScheme.onSurface
+                        : Colors.grey,
+                  ),
+                ),
+                Text(
+                  period,
+                  style: TextStyle(
+                    fontSize: 12,
+                    color: isSelected
+                        ? Theme.of(context).colorScheme.onSurface
+                        : Colors.grey,
+                  ),
+                ),
+              ],
+            ),
+            if (subText != null) ...[
+              const SizedBox(height: 4),
+              Text(
+                subText,
+                style: const TextStyle(
+                    fontSize: 12,
+                    color: Colors.green,
+                    fontWeight: FontWeight.bold),
+              ),
+            ],
           ],
         ),
       ),
+    );
+  }
+}
+
+class _TrustMessageItem extends StatelessWidget {
+  final IconData icon;
+  final String text;
+
+  const _TrustMessageItem({required this.icon, required this.text});
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Icon(icon, size: 14, color: Colors.grey),
+        const SizedBox(width: 4),
+        Text(text, style: const TextStyle(fontSize: 12, color: Colors.grey)),
+      ],
     );
   }
 }

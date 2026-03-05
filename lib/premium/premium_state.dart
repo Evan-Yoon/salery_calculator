@@ -57,9 +57,12 @@ class PremiumProvider extends ChangeNotifier {
         await prefs.setString('last_pdf_month', currentMonth);
       }
 
-      // RevenueCat을 통한 실제 결제 기록 복원 및 확인
-      final rcService = RevenueCatService();
-      final isActuallyPremium = await rcService.isPremiumActive();
+      // RevenueCat을 통한 실제 결제 기록 복원 및 확인 (웹에서는 스킵)
+      bool isActuallyPremium = false;
+      if (!kIsWeb) {
+        final rcService = RevenueCatService();
+        isActuallyPremium = await rcService.isPremiumActive();
+      }
 
       // 로컬 SharedPreferences 값과 RevenueCat 상태 중 하나라도 true면 프리미엄으로 간주할 수 있음
       // (일반적으로는 RevenueCat 상태가 더 정확함)
