@@ -252,6 +252,22 @@ class _PaywallPageState extends State<PaywallPage> {
 
                   const SizedBox(height: 24),
 
+                  // 구독 정책 상세 안내
+                  const Padding(
+                    padding: EdgeInsets.symmetric(horizontal: 16),
+                    child: Column(
+                      children: [
+                        _PolicyText('구독은 Apple ID 또는 Google 계정에 연결됩니다.'),
+                        _PolicyText("기기 변경 시 동일 계정으로 로그인 후 '구매 복원'을 눌러주세요."),
+                        _PolicyText('구독 취소는 스토어에서 언제든지 가능합니다.'),
+                        _PolicyText(
+                            '구독 취소 후 Premium 상태는 다음 결제 주기까지 유지될 수 있습니다.'),
+                      ],
+                    ),
+                  ),
+
+                  const SizedBox(height: 24),
+
                   // 신뢰 메시지 (작은 글씨 & 아이콘)
                   const Row(
                     mainAxisAlignment: MainAxisAlignment.center,
@@ -425,6 +441,23 @@ class _TrustMessageItem extends StatelessWidget {
         const SizedBox(width: 4),
         Text(text, style: const TextStyle(fontSize: 12, color: Colors.grey)),
       ],
+    );
+  }
+}
+
+class _PolicyText extends StatelessWidget {
+  final String text;
+  const _PolicyText(this.text);
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 6),
+      child: Text(
+        text,
+        style: const TextStyle(fontSize: 12, color: Colors.grey, height: 1.4),
+        textAlign: TextAlign.center,
+      ),
     );
   }
 }

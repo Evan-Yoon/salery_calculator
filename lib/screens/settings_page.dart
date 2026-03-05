@@ -85,7 +85,7 @@ class _SettingsPageState extends State<SettingsPage> {
           const Padding(
             padding: EdgeInsets.symmetric(horizontal: 8),
             child: Text(
-              "구독은 스토어 계정(Apple ID/Google)에서 관리됩니다.\n언제든지 스토어에서 취소할 수 있습니다.",
+              "구독은 스토어 계정에서 관리됩니다.\n기기 변경 시 '구매 복원'을 눌러 Premium 상태를 복구할 수 있습니다.",
               style: TextStyle(color: Colors.grey, fontSize: 12, height: 1.4),
               textAlign: TextAlign.center,
             ),
@@ -389,8 +389,7 @@ class _SettingsPageState extends State<SettingsPage> {
               await premiumProvider.iapService.restore();
               if (mounted) {
                 ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(
-                      content: Text('구매 복원을 요청했습니다. 잠시 후 Premium 상태가 반영됩니다.')),
+                  const SnackBar(content: Text('스토어에서 구독 상태를 확인하고 있습니다.')),
                 );
               }
             },
