@@ -1,7 +1,7 @@
 import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'premium_features.dart';
-import '../services/revenue_cat_service.dart';
+import 'iap/iap_service.dart';
 
 class PremiumState {
   final bool isPremium;
@@ -29,13 +29,17 @@ class PremiumProvider extends ChangeNotifier {
   String _lastPdfMonth = '';
   bool _isBannerDismissed = false;
 
+  late final IapService _iapService;
+
   PremiumState get state => _state;
   bool get isPremium => _state.isPremium;
   bool get isLoading => _isLoading;
   bool get isBannerDismissed => _isBannerDismissed;
   int get monthlyPdfCount => _monthlyPdfCount;
+  IapService get iapService => _iapService;
 
   PremiumProvider() {
+    _iapService = IapService(this);
     _loadPremiumState();
   }
 
@@ -45,7 +49,6 @@ class PremiumProvider extends ChangeNotifier {
 
     try {
       final prefs = await SharedPreferences.getInstance();
-      final isPremium = prefs.getBool('isPremium') ?? false;
 
       _monthlyPdfCount = prefs.getInt('pdf_export_count') ?? 0;
       _lastPdfMonth = prefs.getString('pdf_export_month') ?? '';
@@ -61,25 +64,13 @@ class PremiumProvider extends ChangeNotifier {
         await prefs.setString('pdf_export_month', currentMonth);
       }
 
-      // RevenueCat을 통한 실제 결제 기록 복원 및 확인 (웹에서는 스킵)
-      bool isActuallyPremium = false;
+      // 오프라인 캐시 상태 우선 적용
+      final isPremiumCache = prefs.getBool('premium_enabled') ?? false;
+      setPremium(isPremiumCache, source: "offline_cache");
+
+      // IapService 초기화 (복원이 이뤄지며 스토어 상태가 최신화됨)
       if (!kIsWeb) {
-        final rcService = RevenueCatService();
-        isActuallyPremium = await rcService.isPremiumActive();
-      }
-
-      // 로컬 SharedPreferences 값과 RevenueCat 상태 중 하나라도 true면 프리미엄으로 간주할 수 있음
-      // (일반적으로는 RevenueCat 상태가 더 정확함)
-      final effectivePremium = isPremium || isActuallyPremium;
-
-      _state = PremiumState(
-        isPremium: effectivePremium,
-        enabledFeatures: effectivePremium ? PremiumFeature.values.toSet() : {},
-      );
-
-      // 만약 RevenueCat에서 프리미엄임이 확인되었는데 로컬이 false였다면 로컬 동기화
-      if (isActuallyPremium && !isPremium) {
-        await prefs.setBool('isPremium', true);
+        await _iapService.init();
       }
     } catch (e) {
       debugPrint("Failed to load premium state: $e");
@@ -89,38 +80,18 @@ class PremiumProvider extends ChangeNotifier {
     }
   }
 
-  Future<void> restorePurchases() async {
-    _isLoading = true;
+  void setPremium(bool enabled, {String? source}) {
+    debugPrint("setPremium: $enabled, source: $source");
+    _state = PremiumState(
+      isPremium: enabled,
+      enabledFeatures: enabled ? PremiumFeature.values.toSet() : {},
+    );
     notifyListeners();
 
-    try {
-      final rcService = RevenueCatService();
-      final success = await rcService.restorePurchases();
-
-      if (success) {
-        await setPremium(true);
-      }
-    } catch (e) {
-      debugPrint("Failed to restore purchases: $e");
-    } finally {
-      _isLoading = false;
-      notifyListeners();
-    }
-  }
-
-  Future<void> setPremium(bool isPremium) async {
-    try {
-      final prefs = await SharedPreferences.getInstance();
-      await prefs.setBool('isPremium', isPremium);
-
-      _state = PremiumState(
-        isPremium: isPremium,
-        enabledFeatures: isPremium ? PremiumFeature.values.toSet() : {},
-      );
-      notifyListeners();
-    } catch (e) {
-      debugPrint("Failed to save premium state: $e");
-    }
+    // 오프라인용 캐시 저장
+    SharedPreferences.getInstance().then((prefs) {
+      prefs.setBool('premium_enabled', enabled);
+    });
   }
 
   bool hasFeature(PremiumFeature feature) {

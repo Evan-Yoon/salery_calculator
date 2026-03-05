@@ -81,6 +81,15 @@ class _SettingsPageState extends State<SettingsPage> {
             const SizedBox(height: 16),
           ],
           _buildPremiumSection(),
+          const SizedBox(height: 12),
+          const Padding(
+            padding: EdgeInsets.symmetric(horizontal: 8),
+            child: Text(
+              "구독은 스토어 계정(Apple ID/Google)에서 관리됩니다.\n언제든지 스토어에서 취소할 수 있습니다.",
+              style: TextStyle(color: Colors.grey, fontSize: 12, height: 1.4),
+              textAlign: TextAlign.center,
+            ),
+          ),
           const SizedBox(height: 24),
 
           const LegalSection(),
@@ -367,6 +376,24 @@ class _SettingsPageState extends State<SettingsPage> {
             icon: Icons.notifications_active,
             feature: PremiumFeature.smartNotifications,
             featureHint: '근무/월말 알림',
+          ),
+          const Divider(height: 1, color: Colors.white10),
+          ListTile(
+            leading: const Icon(Icons.restore, color: Colors.grey),
+            title: const Text('구매 복원'),
+            subtitle: const Text('기기 변경 또는 재설치 후 같은 스토어 계정으로 복원할 수 있습니다',
+                style: TextStyle(fontSize: 12, color: Colors.grey)),
+            onTap: () async {
+              final premiumProvider =
+                  Provider.of<PremiumProvider>(context, listen: false);
+              await premiumProvider.iapService.restore();
+              if (mounted) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(
+                      content: Text('구매 복원을 요청했습니다. 잠시 후 Premium 상태가 반영됩니다.')),
+                );
+              }
+            },
           ),
         ],
       ),

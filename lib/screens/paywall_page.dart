@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart';
+import 'package:provider/provider.dart';
+import '../premium/premium_state.dart';
 
 // [STUDY NOTE]: 앱 내 프리미엄 기능 결제를 유도하는 상세 페이지입니다.
 // 타겟 사용자(간호사/교대근무자)의 전환율을 높이기 위해 디자인되었습니다.
@@ -20,31 +22,38 @@ class PaywallPage extends StatefulWidget {
 class _PaywallPageState extends State<PaywallPage> {
   // 연간 구독이 기본 선택되도록 true로 초기화
   bool _isYearlySelected = true;
+  late final VoidCallback _premiumListener;
 
-  void _onSubscribe() {
-    final plan = _isYearlySelected ? "yearly" : "monthly";
-    debugPrint(
-        "Paywall Subscribe Clicked - Plan: $plan, EntryPoint: ${widget.entryPoint}");
+  @override
+  void initState() {
+    super.initState();
+    final provider = Provider.of<PremiumProvider>(context, listen: false);
+    _premiumListener = () {
+      if (provider.isPremium && mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Premium 구독이 활성화되었습니다!')),
+        );
+        Navigator.pop(context);
+      }
+    };
+    provider.addListener(_premiumListener);
+  }
 
-    // [테스트용 프리미엄 활성화 코드]
-    /*
-    import 'package:shared_preferences/shared_preferences.dart';
-    
-    // 1. SharedPreferences 사용 (로컬 데이터)
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setBool('isPremium', true);
-    
-    // 2. Provider를 통한 즉각적인 UI 갱신 (선택 사항)
-    if (!mounted) return;
-    Provider.of<PremiumProvider>(context, listen: false).setPremium(true);
-    */
+  @override
+  void dispose() {
+    Provider.of<PremiumProvider>(context, listen: false)
+        .removeListener(_premiumListener);
+    super.dispose();
+  }
 
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-          content:
-              Text('${_isYearlySelected ? "연간" : "월간"} 구독이 시작되었습니다! (테스트 모드)')),
-    );
-    Navigator.pop(context);
+  void _onSubscribe() async {
+    final iapService =
+        Provider.of<PremiumProvider>(context, listen: false).iapService;
+    if (_isYearlySelected) {
+      await iapService.buyYearly();
+    } else {
+      await iapService.buyMonthly();
+    }
   }
 
   @override
@@ -203,7 +212,28 @@ class _PaywallPageState extends State<PaywallPage> {
                         style: TextStyle(color: Colors.grey, fontSize: 15)),
                   ),
 
-                  const SizedBox(height: 24),
+                  // 구매 복원 버튼
+                  TextButton(
+                    onPressed: () async {
+                      final iapService =
+                          Provider.of<PremiumProvider>(context, listen: false)
+                              .iapService;
+                      await iapService.restore();
+                      if (context.mounted) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(
+                              content: Text('구매 복원을 요청했습니다. 잠시 후 반영됩니다.')),
+                        );
+                      }
+                    },
+                    child: const Text('구매 복원 (Restore)',
+                        style: TextStyle(
+                            color: Colors.grey,
+                            fontSize: 13,
+                            decoration: TextDecoration.underline)),
+                  ),
+
+                  const SizedBox(height: 16),
 
                   // 구독 가치 설명 (Why Premium)
                   const Padding(
