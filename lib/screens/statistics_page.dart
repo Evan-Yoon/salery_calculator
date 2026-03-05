@@ -2,9 +2,13 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:fl_chart/fl_chart.dart';
 import 'package:intl/intl.dart';
+import 'dart:io';
+import 'package:path_provider/path_provider.dart';
+import 'package:share_plus/share_plus.dart';
 import '../providers/salary_provider.dart';
 import '../models/shift_entry.dart';
 import '../models/bonus_entry.dart';
+import '../utils/report_generator.dart';
 import '../widgets/main_bottom_nav.dart';
 
 // [STUDY NOTE]: 이 페이지는 수집된 근무 기록과 보너스를 그래프로 보여주고, 알면 유용한 급여 팁을 제공합니다.
@@ -28,6 +32,46 @@ class _StatisticsPageState extends State<StatisticsPage> {
             style: TextStyle(fontWeight: FontWeight.bold)),
         centerTitle: true,
         automaticallyImplyLeading: false,
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.ios_share_rounded,
+                color: Colors.white, size: 22),
+            tooltip: 'PDF 리포트 내보내기',
+            onPressed: () async {
+              try {
+                // 저장 아이콘 클릭 시 로딩 인디케이터 시작
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(
+                      content: Text('PDF 명세서를 생성 중입니다...'),
+                      duration: Duration(seconds: 1)),
+                );
+
+                final provider =
+                    Provider.of<SalaryProvider>(context, listen: false);
+                // 통계 및 인사이트는 현재 달 기준 리포트를 기본으로 내보냅니다.
+                final pdfBytes = await ReportGenerator.generateMonthlyReport(
+                    provider, DateTime.now());
+
+                // 기기 임시 폴더에 저장
+                final tempDir = await getTemporaryDirectory();
+                final file = File(
+                    '${tempDir.path}/salary_report_${DateFormat('yyyyMM').format(DateTime.now())}.pdf');
+                await file.writeAsBytes(pdfBytes);
+
+                // 공유 모달 띄우기
+                // ignore: deprecated_member_use
+                await Share.shareXFiles([XFile(file.path)],
+                    text: '이번 달 월간 급여/근무 명세 리포트입니다.');
+              } catch (e) {
+                if (!context.mounted) return;
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(content: Text('리포트 생성 중 오류가 발생했습니다: $e')),
+                );
+              }
+            },
+          ),
+          const SizedBox(width: 8),
+        ],
       ),
       body: Consumer<SalaryProvider>(
         builder: (context, provider, child) {

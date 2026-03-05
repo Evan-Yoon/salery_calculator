@@ -7,12 +7,22 @@ import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'providers/salary_provider.dart';
 import 'screens/onboarding_page.dart';
 import 'screens/home_page.dart';
+import 'screens/legal_onboarding_page.dart';
 import 'utils/holiday_utils.dart';
 
 // [STUDY NOTE]: main() 함수는 Dart 프로그램의 시작점입니다.
 // runApp()을 호출하여 앱의 루트 위젯을 화면에 그립니다.
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+
+  // [STUDY NOTE]: 앱 전체에서 발생하는 프레임워크 에러를 잡아내는 글로벌 핸들러입니다.
+  // 추후 Firebase Crashlytics 등과 연동할 수 있는 지점입니다.
+  FlutterError.onError = (FlutterErrorDetails details) {
+    FlutterError.presentError(details);
+    debugPrint('=== [GLOBAL ERROR CAUGHT] ===');
+    debugPrint(details.exceptionAsString());
+    if (details.stack != null) debugPrint(details.stack.toString());
+  };
 
   // [STUDY NOTE]: 환경 변수 파일(.env)을 로드하여 안전하게 API 키 등을 관리합니다.
   await dotenv.load(fileName: ".env");
@@ -84,11 +94,13 @@ class MyApp extends StatelessWidget {
         // Consumer를 통해 SalaryProvider의 데이터를 언제든 읽어올 수 있습니다.
         home: Consumer<SalaryProvider>(
           builder: (context, provider, child) {
-            // [STUDY NOTE]: 기존 유저이거나 온보딩을 완료한 경우 메인 화면(BottomNav)으로 이동하고, 처음인 경우 온보딩 배치를 보여줍니다.
-            if (provider.hasCompletedOnboarding) {
-              return const HomePage();
-            } else {
+            // [STUDY NOTE]: 동의를 안 했으면 법적 고지 화면, 온보딩을 안 했으면 설정 안내, 둘 다 했으면 메인 화면으로 이동합니다.
+            if (!provider.hasAgreedToLegal) {
+              return const LegalOnboardingPage();
+            } else if (!provider.hasCompletedOnboarding) {
               return const OnboardingPage();
+            } else {
+              return const HomePage();
             }
           },
         ),

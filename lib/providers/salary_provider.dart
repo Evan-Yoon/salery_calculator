@@ -45,6 +45,9 @@ class SalaryProvider with ChangeNotifier {
   // [STUDY NOTE]: Phase 9: 주휴수당 개근 가정 토글 (기본값 설정 OFF)
   bool _assumeFullAttendance = false;
 
+  // [STUDY NOTE]: Phase 11: 법적 고지 동의 여부 저장
+  bool _hasAgreedToLegal = false;
+
   // [STUDY NOTE]: 외부에서 데이터를 가져다 쓸 수 있도록 열어둔 getter 함수입니다. 외부에서는 데이터를 직접 변경할 수 없습니다.
   List<ShiftEntry> get shifts => _shifts;
   List<BonusEntry> get bonuses => _bonuses;
@@ -55,6 +58,7 @@ class SalaryProvider with ChangeNotifier {
   bool get isShiftWorker => _isShiftWorker;
   bool get hasCompletedOnboarding => _hasCompletedOnboarding;
   bool get assumeFullAttendance => _assumeFullAttendance;
+  bool get hasAgreedToLegal => _hasAgreedToLegal;
 
   // [STUDY NOTE]: 등록된 모든 근무 기록의 총 급여와 비정기 급여를 합산하여 반환하는 Getter
   double get totalSalary {
@@ -92,6 +96,7 @@ class SalaryProvider with ChangeNotifier {
     _isShiftWorker = prefs.getBool('isShiftWorker') ?? true;
     _hasCompletedOnboarding = prefs.getBool('hasCompletedOnboarding') ?? false;
     _assumeFullAttendance = prefs.getBool('assumeFullAttendance') ?? false;
+    _hasAgreedToLegal = prefs.getBool('hasAgreedToLegal') ?? false;
 
     // 근무 프리셋 가져오기
     final String? presetsString = prefs.getString('shiftPresets');
@@ -220,6 +225,15 @@ class SalaryProvider with ChangeNotifier {
     _assumeFullAttendance = value;
     saveData();
     notifyListeners();
+  }
+
+  // [STUDY NOTE]: 법적 고지 및 개인정보 처리를 동의했을 때 저장합니다.
+  void agreeToLegalTerms() async {
+    _hasAgreedToLegal = true;
+    notifyListeners();
+
+    final prefs = await SharedPreferences.getInstance();
+    prefs.setBool('hasAgreedToLegal', true);
   }
 
   // [STUDY NOTE]: 온보딩의 첫 화면에서 근무 형태(교대 근무 여부)만 먼저 설정할 때 호출됩니다.

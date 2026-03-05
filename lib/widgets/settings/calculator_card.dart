@@ -51,10 +51,38 @@ class _CalculatorCardState extends State<CalculatorCard> {
               (v) => provider.setAssumeFullAttendance(v)),
           _buildToggleRow('5인 이상 사업장 (연장/야간 가산)', isFiveOrMoreEmployees,
               (v) => provider.setIsFiveOrMoreEmployees(v)),
+          const SizedBox(height: 8),
+          const Text('세금 계산 모드',
+              style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold)),
+          const SizedBox(height: 8),
+          SegmentedButton<String>(
+            segments: const [
+              ButtonSegment<String>(
+                value: 'simple',
+                label: Text('간편 (추정치)', style: TextStyle(fontSize: 12)),
+              ),
+              ButtonSegment<String>(
+                value: 'precision',
+                label: Text('정밀 (준비중)', style: TextStyle(fontSize: 12)),
+              ),
+            ],
+            selected: const {'simple'},
+            onSelectionChanged: (Set<String> newSelection) {
+              if (newSelection.first == 'precision') {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(content: Text('정밀 세금 계산 모드는 고도화 예정입니다.')),
+                );
+              }
+            },
+            style: SegmentedButton.styleFrom(
+              visualDensity: VisualDensity.compact,
+            ),
+          ),
+          const SizedBox(height: 12),
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              const Text('세금 공제 항목', style: TextStyle(fontSize: 13)),
+              const Text('간편 세율 적용', style: TextStyle(fontSize: 13)),
               DropdownButton<double>(
                 value: taxRate,
                 underline: const SizedBox(),
