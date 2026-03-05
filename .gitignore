@@ -55,3 +55,8 @@ out*.txt
 
 # Flutter metadata
 .metadata
+
+# Keystore / signing
+*.jks
+*.keystore
+android/key.properties
