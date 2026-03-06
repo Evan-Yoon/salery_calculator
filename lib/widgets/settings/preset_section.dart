@@ -26,7 +26,7 @@ class PresetSection extends StatelessWidget {
                 children: [
                   ListTile(
                     leading: Icon(_getIconData(preset.iconType),
-                        color: Theme.of(context).primaryColor),
+                        color: Theme.of(context).colorScheme.primary),
                     title: Text(preset.name,
                         style: const TextStyle(fontWeight: FontWeight.bold)),
                     subtitle: Text(
@@ -61,6 +61,7 @@ class PresetSection extends StatelessWidget {
   IconData _getIconData(String type) {
     switch (type) {
       case 'sunny':
+      case 'day':
         return Icons.wb_sunny_rounded;
       case 'cloud':
         return Icons.cloud_rounded;

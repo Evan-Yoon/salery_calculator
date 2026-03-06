@@ -3,12 +3,8 @@ import 'package:flutter/material.dart';
 // [STUDY NOTE]: provider는 상태 관리(State Management)를 위해 사용되는 패키지입니다.
 import 'package:provider/provider.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
-import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'providers/salary_provider.dart';
-import 'screens/onboarding_page.dart';
-import 'screens/home_page.dart';
-import 'screens/legal_onboarding_page.dart';
-import 'utils/holiday_utils.dart';
+import 'screens/splash_screen.dart';
 import 'premium/premium_state.dart';
 
 // [STUDY NOTE]: main() 함수는 Dart 프로그램의 시작점입니다.
@@ -17,19 +13,12 @@ void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
   // [STUDY NOTE]: 앱 전체에서 발생하는 프레임워크 에러를 잡아내는 글로벌 핸들러입니다.
-  // 추후 Firebase Crashlytics 등과 연동할 수 있는 지점입니다.
   FlutterError.onError = (FlutterErrorDetails details) {
     FlutterError.presentError(details);
     debugPrint('=== [GLOBAL ERROR CAUGHT] ===');
     debugPrint(details.exceptionAsString());
     if (details.stack != null) debugPrint(details.stack.toString());
   };
-
-  // [STUDY NOTE]: 환경 변수 파일(.env)을 로드하여 안전하게 API 키 등을 관리합니다.
-  await dotenv.load(fileName: ".env");
-
-  // [STUDY NOTE]: 앱 시작 시 한국 공공데이터포털(또는 Fallback)에서 공휴일 데이터를 세팅합니다.
-  await HolidayUtils.initializeHolidays();
 
   runApp(const MyApp());
 }
@@ -95,19 +84,8 @@ class MyApp extends StatelessWidget {
         supportedLocales: const [Locale('ko', 'KR'), Locale('en', 'US')],
 
         // [STUDY NOTE]: 앱을 시작했을 때 가장 먼저 보여줄 화면을 결정합니다.
-        // Consumer를 통해 SalaryProvider의 데이터를 언제든 읽어올 수 있습니다.
-        home: Consumer<SalaryProvider>(
-          builder: (context, provider, child) {
-            // [STUDY NOTE]: 동의를 안 했으면 법적 고지 화면, 온보딩을 안 했으면 설정 안내, 둘 다 했으면 메인 화면으로 이동합니다.
-            if (!provider.hasAgreedToLegal) {
-              return const LegalOnboardingPage();
-            } else if (!provider.hasCompletedOnboarding) {
-              return const OnboardingPage();
-            } else {
-              return const HomePage();
-            }
-          },
-        ),
+        // 스플래시 화면에서 초기화 후 다음 화면으로 이동합니다.
+        home: const SplashScreen(),
       ),
     );
   }

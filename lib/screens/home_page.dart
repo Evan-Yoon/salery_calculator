@@ -5,9 +5,7 @@ import '../providers/salary_provider.dart';
 import '../models/shift_entry.dart';
 import 'add_shift_page.dart';
 import 'shift_history_page.dart';
-import 'paywall_page.dart';
 import '../widgets/main_bottom_nav.dart';
-import '../premium/premium_state.dart';
 
 // [STUDY NOTE]: 앱을 켰을 때 가장 먼저 나오는 메인 대시보드 화면입니다.
 class HomePage extends StatefulWidget {
@@ -40,15 +38,6 @@ class _HomePageState extends State<HomePage> {
                 child: Column(
                   children: [
                     _buildSummaryCard(),
-                    Consumer<PremiumProvider>(
-                      builder: (context, premiumProvider, _) {
-                        if (premiumProvider.isPremium ||
-                            premiumProvider.isBannerDismissed) {
-                          return const SizedBox.shrink();
-                        }
-                        return _buildPremiumBanner(premiumProvider);
-                      },
-                    ),
                     _buildShiftListHeader(),
                     _buildShiftList(),
                     const SizedBox(height: 80), // 추가 버튼(FAB)을 위한 여백
@@ -232,112 +221,6 @@ class _HomePageState extends State<HomePage> {
           ),
         );
       },
-    );
-  }
-
-  Widget _buildPremiumBanner(PremiumProvider premiumProvider) {
-    return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          colors: [
-            Theme.of(context).colorScheme.primary.withValues(alpha: 0.15),
-            Theme.of(context).colorScheme.secondary.withValues(alpha: 0.05),
-          ],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-        ),
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(
-          color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.2),
-        ),
-      ),
-      child: Stack(
-        children: [
-          Row(
-            children: [
-              Container(
-                padding: const EdgeInsets.all(10),
-                decoration: BoxDecoration(
-                  color: Theme.of(context)
-                      .colorScheme
-                      .primary
-                      .withValues(alpha: 0.1),
-                  shape: BoxShape.circle,
-                ),
-                child: Icon(
-                  Icons.auto_awesome,
-                  color: Theme.of(context).colorScheme.primary,
-                  size: 24,
-                ),
-              ),
-              const SizedBox(width: 16),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const Text(
-                      '교대 자동화 + 월말 정산,\nPremium으로 더 빠르게',
-                      style: TextStyle(
-                        fontWeight: FontWeight.bold,
-                        fontSize: 15,
-                        height: 1.3,
-                      ),
-                    ),
-                    const SizedBox(height: 4),
-                    const Text(
-                      '패턴 자동 생성 · 병원 규정 저장 · 엑셀/백업',
-                      style: TextStyle(
-                        color: Colors.grey,
-                        fontSize: 11,
-                      ),
-                    ),
-                    const SizedBox(height: 12),
-                    SizedBox(
-                      height: 36,
-                      child: ElevatedButton(
-                        onPressed: () {
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (_) =>
-                                  const PaywallPage(entryPoint: "home_banner"),
-                            ),
-                          );
-                        },
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor:
-                              Theme.of(context).colorScheme.primary,
-                          foregroundColor: Colors.white,
-                          elevation: 0,
-                          padding: const EdgeInsets.symmetric(horizontal: 16),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(10),
-                          ),
-                        ),
-                        child: const Text(
-                          'Premium 보기',
-                          style: TextStyle(
-                              fontSize: 13, fontWeight: FontWeight.bold),
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ],
-          ),
-          Positioned(
-            right: -8,
-            top: -8,
-            child: IconButton(
-              icon: const Icon(Icons.close, size: 18, color: Colors.grey),
-              onPressed: () => premiumProvider.dismissBanner(),
-            ),
-          ),
-        ],
-      ),
     );
   }
 

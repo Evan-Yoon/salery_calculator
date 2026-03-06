@@ -39,7 +39,7 @@ class ShiftPreset {
       endTime: map['endTime'] ?? '18:00',
       breakTimeMinutes: map['breakTimeMinutes']?.toInt() ?? 0,
       multiplier: map['multiplier']?.toDouble() ?? 1.0,
-      iconType: map['iconType'] ?? 'day',
+      iconType: map['iconType'] ?? 'sunny',
     );
   }
 

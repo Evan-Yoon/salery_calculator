@@ -99,8 +99,8 @@ class LegalSection extends StatelessWidget {
                 onTap: () => _showLegalText(
                     context,
                     '공휴일 연동 정보',
-                    '현재 앱은 다음 소스에서 대한민국 법정 공휴일 데이터를 가져오고 있습니다:\n\n[ ${HolidayUtils.dataSourceProvider} ]\n\n'
-                        '기본적으로 대한민국 공공데이터포털(Data.go.kr)의 한국천문연구원 특일정보 API 연동을 시도하며, 네트워크 오류나 API 지연 시 앱 내부에 오프라인으로 하드코딩된 자체 데이터를 사용(Fallback)합니다.'),
+                    '공공기관의 최신 공휴일 데이터를 실시간으로 가져옵니다.\n\n'
+                        '인터넷이 연결되지 않은 상태에서도 앱에 기본 저장된 데이터를 통해 공휴일 정보를 확인하실 수 있습니다.'),
               ),
             ],
           ),
