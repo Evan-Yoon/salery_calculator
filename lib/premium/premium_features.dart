@@ -1,6 +1,6 @@
 enum PremiumFeature {
   shiftPatternGenerator,
-  hospitalPolicyCustomization,
+  workplacePresets,
   cloudBackup,
   excelExport,
   allowanceTemplates,

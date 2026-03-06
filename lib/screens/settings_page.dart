@@ -9,6 +9,10 @@ import '../premium/premium_guard.dart';
 import '../premium/premium_features.dart';
 import '../premium/premium_state.dart';
 import '../screens/paywall_page.dart';
+import '../screens/pattern_generator_page.dart';
+import '../screens/workplace_preset_page.dart';
+import '../screens/csv_export_page.dart';
+import '../screens/cloud_backup_page.dart';
 
 // [STUDY NOTE]: 앱 하단바에서 '설정' 탭을 눌렀을 때 보이는 화면입니다. 시급 설정 변경 기능이 있습니다.
 class SettingsPage extends StatefulWidget {
@@ -341,27 +345,37 @@ class _SettingsPageState extends State<SettingsPage> {
             icon: Icons.auto_awesome,
             feature: PremiumFeature.shiftPatternGenerator,
             featureHint: '교대 패턴 자동 생성',
+            onTapAction: () => Navigator.push(
+                context,
+                MaterialPageRoute(
+                    builder: (_) => const PatternGeneratorPage())),
           ),
           const Divider(height: 1, color: Colors.white10),
           _buildPremiumTile(
-            title: '병원 규정 관리',
-            icon: Icons.local_hospital,
-            feature: PremiumFeature.hospitalPolicyCustomization,
-            featureHint: '병원별 급여 규정 저장',
+            title: 'N잡 관리',
+            icon: Icons.business_center,
+            feature: PremiumFeature.workplacePresets,
+            featureHint: '근무지별 급여 규정 저장',
+            onTapAction: () => Navigator.push(context,
+                MaterialPageRoute(builder: (_) => const WorkplacePresetPage())),
           ),
           const Divider(height: 1, color: Colors.white10),
           _buildPremiumTile(
-            title: '엑셀 리포트',
+            title: '엑셀 리포트 (CSV)',
             icon: Icons.table_chart,
             feature: PremiumFeature.excelExport,
             featureHint: '엑셀 리포트',
+            onTapAction: () => Navigator.push(context,
+                MaterialPageRoute(builder: (_) => const CsvExportPage())),
           ),
           const Divider(height: 1, color: Colors.white10),
           _buildPremiumTile(
-            title: '백업/동기화',
+            title: '백업 / 동기화',
             icon: Icons.cloud_sync,
             feature: PremiumFeature.cloudBackup,
-            featureHint: '기기 변경 데이터 복원',
+            featureHint: 'Google Drive 백업',
+            onTapAction: () => Navigator.push(context,
+                MaterialPageRoute(builder: (_) => const CloudBackupPage())),
           ),
           const Divider(height: 1, color: Colors.white10),
           _buildPremiumTile(
@@ -404,6 +418,7 @@ class _SettingsPageState extends State<SettingsPage> {
     required IconData icon,
     required PremiumFeature feature,
     required String featureHint,
+    VoidCallback? onTapAction,
   }) {
     return PremiumGuard(
       feature: feature,
@@ -448,12 +463,12 @@ class _SettingsPageState extends State<SettingsPage> {
         leading: Icon(icon, color: Theme.of(context).colorScheme.primary),
         title: Text(title, style: const TextStyle(fontWeight: FontWeight.bold)),
         trailing: const Icon(Icons.chevron_right, color: Colors.grey),
-        onTap: () {
-          // 프리미엄일 때의 실제 동작 (현재는 placeholder)
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('준비 중입니다.')),
-          );
-        },
+        onTap: onTapAction ??
+            () {
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(content: Text('준비 중입니다.')),
+              );
+            },
       ),
     );
   }

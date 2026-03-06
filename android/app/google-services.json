@@ -1,0 +1,47 @@
+{
+  "project_info": {
+    "project_number": "924414095002",
+    "project_id": "salary-calculator-66638",
+    "storage_bucket": "salary-calculator-66638.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:924414095002:android:d69076a61a33fc51f93923",
+        "android_client_info": {
+          "package_name": "com.evan.salarycalculator"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "924414095002-enorr9uvrodens3cerbv0cq4dmnh60lh.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.evan.salarycalculator",
+            "certificate_hash": "13c21378f4f2914a4e513e987f498efd957b09e3"
+          }
+        },
+        {
+          "client_id": "924414095002-rma0j0om5fpbagb9q7p96uf6qgn6s8rk.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBAD0QQG1QvQnes-pwLLVpJwSGoRwd6Q-Q"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "924414095002-rma0j0om5fpbagb9q7p96uf6qgn6s8rk.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
