@@ -60,3 +60,7 @@ out*.txt
 *.jks
 *.keystore
 android/key.properties
+
+# Google Cloud / Firebase credentials
+# client_secret JSON should NEVER be committed to a public repo
+android/app/client_secret_*.json
