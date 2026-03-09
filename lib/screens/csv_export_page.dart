@@ -202,7 +202,7 @@ class _CsvExportPageState extends State<CsvExportPage> {
       width: double.infinity,
       height: 56,
       child: ElevatedButton.icon(
-        onPressed: _isExporting ? null : () => _export(context),
+        onPressed: _isExporting ? null : _export,
         icon: _isExporting
             ? const SizedBox(
                 width: 20,
@@ -225,7 +225,7 @@ class _CsvExportPageState extends State<CsvExportPage> {
     );
   }
 
-  Future<void> _export(BuildContext context) async {
+  Future<void> _export() async {
     setState(() => _isExporting = true);
     try {
       final provider = Provider.of<SalaryProvider>(context, listen: false);
@@ -233,7 +233,7 @@ class _CsvExportPageState extends State<CsvExportPage> {
           CsvGenerator.generateShiftsCsv(provider, _selectedMonth);
 
       // UTF-8 BOM 추가 (엑셀에서 한글 깨짐 방지)
-      final bom = '\uFEFF';
+      const bom = '\uFEFF';
       final csvWithBom = bom + csvString;
 
       final tempDir = await getTemporaryDirectory();

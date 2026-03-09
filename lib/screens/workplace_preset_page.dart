@@ -144,8 +144,9 @@ class WorkplacePresetPage extends StatelessWidget {
             trailing: PopupMenuButton<String>(
               onSelected: (value) {
                 if (value == 'edit') _showEditSheet(context, preset);
-                if (value == 'delete')
+                if (value == 'delete') {
                   _confirmDelete(context, preset, provider);
+                }
               },
               itemBuilder: (_) => [
                 const PopupMenuItem(value: 'edit', child: Text('수정')),

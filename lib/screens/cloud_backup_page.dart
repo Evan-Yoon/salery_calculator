@@ -300,11 +300,12 @@ class _CloudBackupPageState extends State<CloudBackupPage> {
 
   Future<void> _signOut() async {
     await GoogleDriveService.signOut();
-    if (mounted)
+    if (mounted) {
       setState(() {
         _user = null;
         _lastBackupTime = null;
       });
+    }
   }
 
   Future<void> _backup() async {
@@ -368,6 +369,7 @@ class _CloudBackupPageState extends State<CloudBackupPage> {
         }
         return;
       }
+      if (!mounted) return;
       final provider = Provider.of<SalaryProvider>(context, listen: false);
       await provider.importFromJson(jsonData);
       if (mounted) setState(() => _statusMessage = '복원이 완료되었습니다.');

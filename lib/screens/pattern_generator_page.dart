@@ -14,7 +14,7 @@ class PatternGeneratorPage extends StatefulWidget {
 class _PatternGeneratorPageState extends State<PatternGeneratorPage> {
   DateTime _selectedMonth = DateTime(DateTime.now().year, DateTime.now().month);
   DateTime _startFrom = DateTime(DateTime.now().year, DateTime.now().month, 1);
-  List<ShiftPreset?> _pattern = [];
+  final List<ShiftPreset?> _pattern = [];
 
   @override
   Widget build(BuildContext context) {
