@@ -6,6 +6,8 @@ import 'package:flutter_localizations/flutter_localizations.dart';
 import 'providers/salary_provider.dart';
 import 'screens/splash_screen.dart';
 import 'premium/premium_state.dart';
+import 'services/notification_service.dart';
+import 'providers/notification_settings_provider.dart';
 
 // [STUDY NOTE]: main() 함수는 Dart 프로그램의 시작점입니다.
 // runApp()을 호출하여 앱의 루트 위젯을 화면에 그립니다.
@@ -19,6 +21,9 @@ void main() async {
     debugPrint(details.exceptionAsString());
     if (details.stack != null) debugPrint(details.stack.toString());
   };
+
+  // 알림 서비스 초기화
+  await NotificationService().init();
 
   runApp(const MyApp());
 }
@@ -35,6 +40,7 @@ class MyApp extends StatelessWidget {
       providers: [
         ChangeNotifierProvider(create: (_) => SalaryProvider()),
         ChangeNotifierProvider(create: (_) => PremiumProvider()),
+        ChangeNotifierProvider(create: (_) => NotificationSettingsProvider()),
       ],
       // [STUDY NOTE]: MaterialApp은 Material Design을 사용하는 플러터 앱의 기본 위젯입니다.
       child: MaterialApp(

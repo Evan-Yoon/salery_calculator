@@ -13,6 +13,8 @@ import '../screens/pattern_generator_page.dart';
 import '../screens/workplace_preset_page.dart';
 import '../screens/csv_export_page.dart';
 import '../screens/cloud_backup_page.dart';
+import '../screens/allowance_templates_page.dart';
+import '../screens/notification_settings_page.dart';
 
 // [STUDY NOTE]: 앱 하단바에서 '설정' 탭을 눌렀을 때 보이는 화면입니다. 시급 설정 변경 기능이 있습니다.
 class SettingsPage extends StatefulWidget {
@@ -345,6 +347,7 @@ class _SettingsPageState extends State<SettingsPage> {
             icon: Icons.auto_awesome,
             feature: PremiumFeature.shiftPatternGenerator,
             featureHint: '교대 패턴 자동 생성',
+            entryPoint: 'settings_shift_pattern',
             onTapAction: () => Navigator.push(
                 context,
                 MaterialPageRoute(
@@ -356,6 +359,7 @@ class _SettingsPageState extends State<SettingsPage> {
             icon: Icons.business_center,
             feature: PremiumFeature.workplacePresets,
             featureHint: '근무지별 급여 규정 저장',
+            entryPoint: 'settings_workplace_presets',
             onTapAction: () => Navigator.push(context,
                 MaterialPageRoute(builder: (_) => const WorkplacePresetPage())),
           ),
@@ -365,6 +369,7 @@ class _SettingsPageState extends State<SettingsPage> {
             icon: Icons.table_chart,
             feature: PremiumFeature.excelExport,
             featureHint: '엑셀 리포트',
+            entryPoint: 'settings_excel_export',
             onTapAction: () => Navigator.push(context,
                 MaterialPageRoute(builder: (_) => const CsvExportPage())),
           ),
@@ -374,6 +379,7 @@ class _SettingsPageState extends State<SettingsPage> {
             icon: Icons.cloud_sync,
             feature: PremiumFeature.cloudBackup,
             featureHint: 'Google Drive 백업',
+            entryPoint: 'settings_cloud_backup',
             onTapAction: () => Navigator.push(context,
                 MaterialPageRoute(builder: (_) => const CloudBackupPage())),
           ),
@@ -383,6 +389,11 @@ class _SettingsPageState extends State<SettingsPage> {
             icon: Icons.payments,
             feature: PremiumFeature.allowanceTemplates,
             featureHint: '수당 템플릿',
+            entryPoint: 'settings_allowance_templates',
+            onTapAction: () => Navigator.push(
+                context,
+                MaterialPageRoute(
+                    builder: (_) => const AllowanceTemplatesPage())),
           ),
           const Divider(height: 1, color: Colors.white10),
           _buildPremiumTile(
@@ -390,6 +401,11 @@ class _SettingsPageState extends State<SettingsPage> {
             icon: Icons.notifications_active,
             feature: PremiumFeature.smartNotifications,
             featureHint: '근무/월말 알림',
+            entryPoint: 'settings_smart_notifications',
+            onTapAction: () => Navigator.push(
+                context,
+                MaterialPageRoute(
+                    builder: (_) => const NotificationSettingsPage())),
           ),
           const Divider(height: 1, color: Colors.white10),
           ListTile(
@@ -418,6 +434,7 @@ class _SettingsPageState extends State<SettingsPage> {
     required IconData icon,
     required PremiumFeature feature,
     required String featureHint,
+    String? entryPoint,
     VoidCallback? onTapAction,
   }) {
     return PremiumGuard(
@@ -452,7 +469,7 @@ class _SettingsPageState extends State<SettingsPage> {
             context,
             MaterialPageRoute(
               builder: (_) => PaywallPage(
-                entryPoint: "settings_locked",
+                entryPoint: entryPoint ?? 'settings_locked',
                 featureHint: featureHint,
               ),
             ),

@@ -55,4 +55,11 @@ class HolidayUtils {
         '${date.year}-${date.month.toString().padLeft(2, '0')}-${date.day.toString().padLeft(2, '0')}';
     return _holidays[dateString];
   }
+
+  /// 해당 날짜가 속한 주의 월요일을 반환합니다.
+  static DateTime getFirstDayOfWeek(DateTime date) {
+    int daysToSubtract = (date.weekday - DateTime.monday) % 7;
+    return DateTime(date.year, date.month, date.day)
+        .subtract(Duration(days: daysToSubtract));
+  }
 }

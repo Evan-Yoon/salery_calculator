@@ -6,60 +6,33 @@ import '../models/shift_entry.dart';
 import '../models/bonus_entry.dart';
 import '../models/shift_preset.dart';
 import '../models/workplace_preset.dart';
+import '../models/allowance_template.dart';
+import '../services/notification_service.dart';
 import '../utils/shift_calculator.dart';
 import '../utils/holiday_utils.dart';
 
-// [STUDY NOTE]: SalaryProvider는 앱 전체의 상태(근무 기록 리스트, 시급 설정 등)를 관리하는 역할을 합니다.
-// ChangeNotifier를 믹스인(with)으로 사용하여, 데이터가 변경될 때마다 화면을 새로고침하도록 알림을 줍니다.
+// [STUDY NOTE]: ChangeNotifier를 상속받으면 notifyListeners()를 호출해 UI를 자동으로 갱신할 수 있습니다.
+// 이 클래스는 앱의 '급여 데이터'라는 상태를 총괄하며, 데이터의 추가/삭제/수정을 처리합니다.
 class SalaryProvider with ChangeNotifier {
-  // [STUDY NOTE]: 프라이빗 변수(_shifts, _hourlyWage, _bonuses)로 실제 데이터를 안전하게 보관합니다.
+  // [STUDY NOTE]: 근무 기록(ShiftEntry)과 보너스 기록(BonusEntry)을 담는 리스트입니다.
   List<ShiftEntry> _shifts = [];
   List<BonusEntry> _bonuses = [];
-  double _hourlyWage = 10320.0; // 2026년 기준 최저시급 등 기본값
 
-  // [STUDY NOTE]: 앱 확장을 위한 새로운 전역 설정값들입니다. (프리셋, 5인 이상 여부, 세금)
-  List<ShiftPreset> _shiftPresets = [
-    ShiftPreset(
-        id: 'default_day',
-        name: '데이(Day)',
-        startTime: '07:00',
-        endTime: '15:00',
-        breakTimeMinutes: 60,
-        multiplier: 1.0,
-        iconType: 'sunny'),
-    ShiftPreset(
-        id: 'default_eve',
-        name: '이브닝(Eve)',
-        startTime: '15:00',
-        endTime: '23:00',
-        breakTimeMinutes: 60,
-        multiplier: 1.0,
-        iconType: 'cloud'),
-    ShiftPreset(
-        id: 'default_night',
-        name: '나이트(Night)',
-        startTime: '23:00',
-        endTime: '07:00',
-        breakTimeMinutes: 60,
-        multiplier: 1.5,
-        iconType: 'night'),
-  ];
-  bool _isFiveOrMoreEmployees = false;
-  double _taxRate = 0.0; // 0.0(세금 없음), 0.033(프리랜서), 0.094(4대보험)
-
-  // [STUDY NOTE]: Phase 2: 온보딩 기능 도입 (교대 근무자 vs 고정 시간 근무자)
+  // [STUDY NOTE]: 기본 시급 및 계산 설정값들입니다.
+  double _hourlyWage = 10000;
+  bool _isFiveOrMoreEmployees = true;
+  double _taxRate = 0.0; // 0.0: 미적용, 0.033: 3.3%, 0.094: 4대보험 등
   bool _isShiftWorker = true;
   bool _hasCompletedOnboarding = false;
-
-  // [STUDY NOTE]: Phase 9: 주휴수당 개근 가정 토글 (기본값 설정 OFF)
   bool _assumeFullAttendance = false;
-
-  // [STUDY NOTE]: Phase 11: 법적 고지 동의 여부 저장
   bool _hasAgreedToLegal = false;
 
   // [STUDY NOTE]: 근무지 프리셋 목록 및 현재 적용 중인 프리셋 ID
   List<WorkplacePreset> _workplacePresets = [];
   String? _activeWorkplacePresetId;
+
+  // [STUDY NOTE]: 수당 템플릿 목록 (updatedAt 내림차순 정렬)
+  List<AllowanceTemplate> _allowanceTemplates = [];
 
   // [STUDY NOTE]: 외부에서 데이터를 가져다 쓸 수 있도록 열어둔 getter 함수입니다. 외부에서는 데이터를 직접 변경할 수 없습니다.
   List<ShiftEntry> get shifts => _shifts;
@@ -74,6 +47,9 @@ class SalaryProvider with ChangeNotifier {
   bool get hasAgreedToLegal => _hasAgreedToLegal;
   List<WorkplacePreset> get workplacePresets => _workplacePresets;
   String? get activeWorkplacePresetId => _activeWorkplacePresetId;
+  List<AllowanceTemplate> get allowanceTemplates => _allowanceTemplates;
+  List<AllowanceTemplate> get activeAllowanceTemplates =>
+      _allowanceTemplates.where((t) => t.isActive).toList();
 
   // [STUDY NOTE]: 등록된 모든 근무 기록의 총 급여와 비정기 급여를 합산하여 반환하는 Getter
   double get totalSalary {
@@ -90,82 +66,83 @@ class SalaryProvider with ChangeNotifier {
     return _shifts.fold(0.0, (prev, element) {
       int netMinutes = element.endTime.difference(element.startTime).inMinutes -
           element.breakTimeMinutes;
-      if (netMinutes < 0) netMinutes = 0; // 예외 처리: 휴게시간이 전체 근무시간보다 긴 경우 0으로 처리
       return prev + (netMinutes / 60.0);
     });
   }
 
-  // [STUDY NOTE]: Provider가 처음 생성될 때 자동으로 저장된 데이터를 불러오도록 합니다.
+  // [STUDY NOTE]: 시프트 프리셋(예: 주간, 야간 등 자주 쓰는 시간대) 리스트입니다.
+  List<ShiftPreset> _shiftPresets = [];
+
   SalaryProvider() {
-    loadData();
+    loadData(); // 클래스가 생성될 때 데이터를 불러옵니다.
   }
 
-  // [STUDY NOTE]: 스마트폰 내부 저장소(SharedPreferences)에서 시급 설정과 기존 근무 기록을 불러옵니다.
+  // [STUDY NOTE]: SharedPreferences에서 저장된 데이터를 가져오는 비동기 함수입니다.
   Future<void> loadData() async {
     final prefs = await SharedPreferences.getInstance();
 
-    // 시급 및 전역 설정 가져오기
-    _hourlyWage = prefs.getDouble('hourlyWage') ?? 10320.0;
-    _isFiveOrMoreEmployees = prefs.getBool('isFiveOrMoreEmployees') ?? false;
+    _hourlyWage = prefs.getDouble('hourlyWage') ?? 10000.0;
+    _isFiveOrMoreEmployees = prefs.getBool('isFiveOrMoreEmployees') ?? true;
     _taxRate = prefs.getDouble('taxRate') ?? 0.0;
     _isShiftWorker = prefs.getBool('isShiftWorker') ?? true;
     _hasCompletedOnboarding = prefs.getBool('hasCompletedOnboarding') ?? false;
     _assumeFullAttendance = prefs.getBool('assumeFullAttendance') ?? false;
     _hasAgreedToLegal = prefs.getBool('hasAgreedToLegal') ?? false;
-
-    // 근무지 프리셋 로드
-    final String? workplacePresetsString = prefs.getString('workplacePresets');
-    if (workplacePresetsString != null) {
-      try {
-        final List<dynamic> decoded = jsonDecode(workplacePresetsString);
-        _workplacePresets =
-            decoded.map((e) => WorkplacePreset.fromMap(e)).toList();
-      } catch (e) {
-        debugPrint('Error loading workplace presets: $e');
-      }
-    }
     _activeWorkplacePresetId = prefs.getString('activeWorkplacePresetId');
+
+    // 수당 템플릿 로드
+    final String? allowanceTemplatesString =
+        prefs.getString('allowance_templates');
+    if (allowanceTemplatesString != null) {
+      try {
+        final List<dynamic> decoded = jsonDecode(allowanceTemplatesString);
+        _allowanceTemplates =
+            decoded.map((e) => AllowanceTemplate.fromMap(e)).toList();
+        _sortAllowanceTemplates();
+      } catch (e) {
+        debugPrint('Error loading allowance templates: $e');
+        _allowanceTemplates = defaultAllowanceTemplates;
+      }
+    } else {
+      // 최초 실행: 기본 템플릿 자동 생성
+      _allowanceTemplates = defaultAllowanceTemplates;
+    }
 
     // 프리셋 데이터 로드
     final String? presetsString = prefs.getString('shiftPresets');
     if (presetsString != null) {
-      try {
-        final List<dynamic> decoded = jsonDecode(presetsString);
-        _shiftPresets = decoded.map((e) => ShiftPreset.fromMap(e)).toList();
-      } catch (e) {
-        debugPrint('Error loading presets: $e');
-      }
+      final List<dynamic> decoded = jsonDecode(presetsString);
+      _shiftPresets = decoded.map((e) => ShiftPreset.fromMap(e)).toList();
     }
 
-    // 근무 기록 가져오기 (저장된 리스트 형태의 텍스트가 있는지 확인)
+    final String? workplacePresetsString = prefs.getString('workplacePresets');
+    if (workplacePresetsString != null) {
+      final List<dynamic> decoded = jsonDecode(workplacePresetsString);
+      _workplacePresets =
+          decoded.map((e) => WorkplacePreset.fromMap(e)).toList();
+    }
+
+    // 근무 기록 로드
     final String? shiftsString = prefs.getString('shifts');
     if (shiftsString != null) {
-      try {
-        final List<dynamic> decoded = jsonDecode(shiftsString);
-        _shifts = decoded.map((e) => ShiftEntry.fromMap(e)).toList();
-        _shifts.sort((a, b) => b.startTime.compareTo(a.startTime));
-      } catch (e) {
-        debugPrint('Error loading shifts: $e');
-      }
+      final List<dynamic> decoded = jsonDecode(shiftsString);
+      _shifts = decoded.map((e) => ShiftEntry.fromMap(e)).toList();
+      // 날짜순으로 정렬 (최신순)
+      _shifts.sort((a, b) => b.startTime.compareTo(a.startTime));
     }
 
-    // 비정기 급여(상여금) 기록 가져오기
+    // 보너스 기록 로드
     final String? bonusesString = prefs.getString('bonuses');
     if (bonusesString != null) {
-      try {
-        final List<dynamic> decoded = jsonDecode(bonusesString);
-        _bonuses = decoded.map((e) => BonusEntry.fromMap(e)).toList();
-        _bonuses.sort((a, b) => b.date.compareTo(a.date));
-      } catch (e) {
-        debugPrint('Error loading bonuses: $e');
-      }
+      final List<dynamic> decoded = jsonDecode(bonusesString);
+      _bonuses = decoded.map((e) => BonusEntry.fromMap(e)).toList();
+      _bonuses.sort((a, b) => b.date.compareTo(a.date));
     }
 
-    // [STUDY NOTE]: 데이터를 다 불러왔으니 UI(화면)에게 업데이트하라고 알립니다.
     notifyListeners();
   }
 
-  // [STUDY NOTE]: 현재 메모리에 있는 리스트와 시급 데이터를 스마트폰 내부 저장소에 저장합니다.
+  // [STUDY NOTE]: 데이터를 SharedPreferences에 저장하는 비동기 함수입니다.
   Future<void> saveData() async {
     final prefs = await SharedPreferences.getInstance();
     prefs.setDouble('hourlyWage', _hourlyWage);
@@ -174,8 +151,8 @@ class SalaryProvider with ChangeNotifier {
     prefs.setBool('isShiftWorker', _isShiftWorker);
     prefs.setBool('hasCompletedOnboarding', _hasCompletedOnboarding);
     prefs.setBool('assumeFullAttendance', _assumeFullAttendance);
-    prefs.setString('shiftPresets',
-        jsonEncode(_shiftPresets.map((e) => e.toMap()).toList()));
+    prefs.setBool('hasAgreedToLegal', _hasAgreedToLegal);
+
     prefs.setString('workplacePresets',
         jsonEncode(_workplacePresets.map((e) => e.toMap()).toList()));
     if (_activeWorkplacePresetId != null) {
@@ -184,33 +161,49 @@ class SalaryProvider with ChangeNotifier {
       prefs.remove('activeWorkplacePresetId');
     }
 
+    // 수당 템플릿 저장
+    prefs.setString('allowance_templates',
+        jsonEncode(_allowanceTemplates.map((e) => e.toMap()).toList()));
+
     // [STUDY NOTE]: 시프트 리스트를 JSON 텍스트로 변환하여 저장합니다.
     final String shiftsString =
         jsonEncode(_shifts.map((e) => e.toMap()).toList());
     prefs.setString('shifts', shiftsString);
 
-    // [STUDY NOTE]: 보너스 리스트도 JSON 텍스트로 변환하여 저장합니다.
+    // [STUDY NOTE]: 보너스 리스트를 JSON 텍스트로 변환하여 저장합니다.
     final String bonusesString =
         jsonEncode(_bonuses.map((e) => e.toMap()).toList());
     prefs.setString('bonuses', bonusesString);
+
+    final String presetsString =
+        jsonEncode(_shiftPresets.map((e) => e.toMap()).toList());
+    prefs.setString('shiftPresets', presetsString);
   }
 
-  // [STUDY NOTE]: 새로운 근무 기록을 추가하고, 다시 정렬한 뒤 영구 저장 및 화면 새로고침을 합니다.
+  // ─────────────────────────────────────────────
+  // 근무/보너스 관리 메서드
+  // ─────────────────────────────────────────────
+
   void addShift(ShiftEntry shift) {
     _shifts.add(shift);
     _shifts.sort((a, b) => b.startTime.compareTo(a.startTime));
     saveData();
+
+    // 알림 예약
+    NotificationService().scheduleShiftReminder(shift);
+
     notifyListeners(); // [STUDY NOTE]: 상태가 변경되었음을 UI에 알려줍니다. (Consumer/Provider가 UI를 다시 그림)
   }
 
-  // [STUDY NOTE]: 특정 근무 기록을 삭제할 때 호출합니다.
   void removeShift(String id) {
+    // 알림 취소
+    NotificationService().cancelShiftReminder(id);
+
     _shifts.removeWhere((element) => element.id == id);
     saveData();
     notifyListeners();
   }
 
-  // [STUDY NOTE]: 기존 근무 기록을 수정할 때 호출합니다. (ID로 기존 항목을 찾아 덮어씌웁니다)
   void updateShift(ShiftEntry updatedShift) {
     final index =
         _shifts.indexWhere((element) => element.id == updatedShift.id);
@@ -218,11 +211,15 @@ class SalaryProvider with ChangeNotifier {
       _shifts[index] = updatedShift;
       _shifts.sort((a, b) => b.startTime.compareTo(a.startTime));
       saveData();
+
+      // 알림 갱신 (기존 취소 후 재예약)
+      NotificationService().cancelShiftReminder(updatedShift.id);
+      NotificationService().scheduleShiftReminder(updatedShift);
+
       notifyListeners();
     }
   }
 
-  // [STUDY NOTE]: 새로운 보너스/상여금 기록을 추가하고, 정렬 후 저장합니다.
   void addBonus(BonusEntry bonus) {
     _bonuses.add(bonus);
     _bonuses.sort((a, b) => b.date.compareTo(a.date));
@@ -230,7 +227,6 @@ class SalaryProvider with ChangeNotifier {
     notifyListeners();
   }
 
-  // [STUDY NOTE]: 보너스 기록을 삭제합니다.
   void removeBonus(String id) {
     _bonuses.removeWhere((element) => element.id == id);
     saveData();
@@ -239,28 +235,6 @@ class SalaryProvider with ChangeNotifier {
 
   void setHourlyWage(double wage) {
     _hourlyWage = wage;
-    saveData();
-    notifyListeners();
-  }
-
-  // [STUDY NOTE]: 프리셋 관련 CRUD 함수들입니다.
-  void addPreset(ShiftPreset preset) {
-    _shiftPresets.add(preset);
-    saveData();
-    notifyListeners();
-  }
-
-  void updatePreset(ShiftPreset updatedPreset) {
-    final index = _shiftPresets.indexWhere((p) => p.id == updatedPreset.id);
-    if (index != -1) {
-      _shiftPresets[index] = updatedPreset;
-      saveData();
-      notifyListeners();
-    }
-  }
-
-  void removePreset(String id) {
-    _shiftPresets.removeWhere((p) => p.id == id);
     saveData();
     notifyListeners();
   }
@@ -277,30 +251,120 @@ class SalaryProvider with ChangeNotifier {
     notifyListeners();
   }
 
+  void setIsShiftWorker(bool value) {
+    _isShiftWorker = value;
+    saveData();
+    notifyListeners();
+  }
+
+  void setOnboardingCompleted(bool value) {
+    _hasCompletedOnboarding = value;
+    saveData();
+    notifyListeners();
+  }
+
   void setAssumeFullAttendance(bool value) {
     _assumeFullAttendance = value;
     saveData();
     notifyListeners();
   }
 
-  // [STUDY NOTE]: 근무지 프리셋 CRUD 메서드들입니다.
-  void addWorkplacePreset(WorkplacePreset preset) {
-    _workplacePresets.add(preset);
+  void agreeToLegalTerms() {
+    _hasAgreedToLegal = true;
     saveData();
     notifyListeners();
   }
 
-  void updateWorkplacePreset(WorkplacePreset updated) {
-    final idx = _workplacePresets.indexWhere((p) => p.id == updated.id);
+  void setWorkerType(bool isShiftWorker) {
+    _isShiftWorker = isShiftWorker;
+    saveData();
+    notifyListeners();
+  }
+
+  Future<void> completeOnboarding() async {
+    _hasCompletedOnboarding = true;
+    await saveData();
+    notifyListeners();
+  }
+
+  // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  // [STUDY NOTE]: 수당 템플릿 CRUD 메서드들입니다.
+  // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  void addAllowanceTemplate(AllowanceTemplate template) {
+    _allowanceTemplates.add(template);
+    _sortAllowanceTemplates();
+    saveData();
+    notifyListeners();
+  }
+
+  void updateAllowanceTemplate(AllowanceTemplate updated) {
+    final idx = _allowanceTemplates.indexWhere((t) => t.id == updated.id);
     if (idx != -1) {
-      _workplacePresets[idx] = updated;
-      // 현재 적용 중인 프리셋이 수정되면 설정값도 함께 업데이트
+      _allowanceTemplates[idx] = updated;
+      _sortAllowanceTemplates();
+      saveData();
+      notifyListeners();
+    }
+  }
+
+  void deleteAllowanceTemplate(String id) {
+    _allowanceTemplates.removeWhere((t) => t.id == id);
+    saveData();
+    notifyListeners();
+  }
+
+  void toggleAllowanceTemplateActive(String id) {
+    final idx = _allowanceTemplates.indexWhere((t) => t.id == id);
+    if (idx != -1) {
+      _allowanceTemplates[idx] = _allowanceTemplates[idx].copyWith(
+        isActive: !_allowanceTemplates[idx].isActive,
+        updatedAt: DateTime.now(),
+      );
+      _sortAllowanceTemplates();
+      saveData();
+      notifyListeners();
+    }
+  }
+
+  void _sortAllowanceTemplates() {
+    _allowanceTemplates.sort((a, b) => b.updatedAt.compareTo(a.updatedAt));
+  }
+
+  void _applyPresetValues(WorkplacePreset preset) {
+    _hourlyWage = preset.hourlyWage;
+    _isFiveOrMoreEmployees = preset.isFiveOrMoreEmployees;
+    _taxRate = preset.taxRate;
+    _activeWorkplacePresetId = preset.id;
+    saveData();
+    notifyListeners();
+  }
+
+  void applyWorkplacePreset(String presetId) {
+    final preset = _workplacePresets.firstWhere((p) => p.id == presetId);
+    _applyPresetValues(preset);
+  }
+
+  void setActiveWorkplacePreset(WorkplacePreset preset) {
+    _applyPresetValues(preset);
+  }
+
+  void updateWorkplacePreset(WorkplacePreset updated) {
+    final index = _workplacePresets.indexWhere((p) => p.id == updated.id);
+    if (index != -1) {
+      _workplacePresets[index] = updated;
       if (_activeWorkplacePresetId == updated.id) {
         _applyPresetValues(updated);
       }
       saveData();
       notifyListeners();
     }
+  }
+
+  void addWorkplacePreset(WorkplacePreset preset) {
+    _workplacePresets.add(preset);
+    saveData();
+    notifyListeners();
   }
 
   void removeWorkplacePreset(String id) {
@@ -312,143 +376,201 @@ class SalaryProvider with ChangeNotifier {
     notifyListeners();
   }
 
-  // [STUDY NOTE]: 선택한 근무지 프리셋을 현재 급여 설정에 즉시 적용합니다.
-  void applyWorkplacePreset(String id) {
-    final preset = _workplacePresets.firstWhere((p) => p.id == id,
-        orElse: () => throw Exception('Preset not found'));
-    _activeWorkplacePresetId = id;
-    _applyPresetValues(preset);
+  void clearActiveWorkplacePreset() {
+    _activeWorkplacePresetId = null;
     saveData();
     notifyListeners();
   }
 
-  void _applyPresetValues(WorkplacePreset preset) {
-    _hourlyWage = preset.hourlyWage;
-    _isFiveOrMoreEmployees = preset.isFiveOrMoreEmployees;
-    _taxRate = preset.taxRate;
-    _assumeFullAttendance = preset.assumeFullAttendance;
-  }
+  // ─────────────────────────────────────────────
+  // 프리셋 관리 메서드 (ShiftPreset)
+  // ─────────────────────────────────────────────
 
-  // [STUDY NOTE]: 법적 고지 및 개인정보 처리를 동의했을 때 저장합니다.
-  void agreeToLegalTerms() async {
-    _hasAgreedToLegal = true;
-    notifyListeners();
+  void addPreset(ShiftPreset preset) => addShiftPreset(preset);
+  void updatePreset(ShiftPreset updated) => updateShiftPreset(updated);
+  void removePreset(String id) => removeShiftPreset(id);
 
-    final prefs = await SharedPreferences.getInstance();
-    prefs.setBool('hasAgreedToLegal', true);
-  }
-
-  // [STUDY NOTE]: 온보딩의 첫 화면에서 근무 형태(교대 근무 여부)만 먼저 설정할 때 호출됩니다.
-  void setWorkerType(bool isShiftWorker) {
-    _isShiftWorker = isShiftWorker;
+  void addShiftPreset(ShiftPreset preset) {
+    _shiftPresets.add(preset);
     saveData();
     notifyListeners();
   }
 
-  // [STUDY NOTE]: 온보딩의 두 번째 화면(급여 입력)까지 마치면 최종적으로 온보딩 완료 처리를 합니다.
-  Future<void> completeOnboarding() async {
-    _hasCompletedOnboarding = true;
-    await saveData();
-    notifyListeners();
-  }
-
-  // [STUDY NOTE]: 설정 페이지에서 사용자가 프리셋 시간이나 이름을 변경할 때 호출되는 함수입니다.
-  void updateShiftPreset(ShiftPreset updatedPreset) {
-    final index = _shiftPresets.indexWhere((p) => p.id == updatedPreset.id);
+  void updateShiftPreset(ShiftPreset updated) {
+    final index = _shiftPresets.indexWhere((p) => p.id == updated.id);
     if (index != -1) {
-      _shiftPresets[index] = updatedPreset;
+      _shiftPresets[index] = updated;
       saveData();
       notifyListeners();
     }
   }
 
-  // [STUDY NOTE]: 특정 날짜 기준, 해당 '주차(월~일)'에 이미 근무한 총 시간을 계산하여 반환합니다. (주 40시간 초과 연장수당용)
-  double getWeeklyWorkedHoursBefore(DateTime targetDate,
-      {String? excludeShiftId}) {
-    // 1. targetDate가 속한 주의 월요일 시작시간 구하기 (Korean Time 기준 월요일이 한 주의 시작)
-    int daysFromMonday = targetDate.weekday - DateTime.monday;
-    if (daysFromMonday < 0) {
-      daysFromMonday += 7; // 방어 로직 (기본적으로 DateTime.monday는 1, 일요일은 7)
-    }
-
-    DateTime mondayStart =
-        DateTime(targetDate.year, targetDate.month, targetDate.day)
-            .subtract(Duration(days: daysFromMonday));
-
-    // 2. 해당 주차 월요일 00:00:00 부터 targetDate 직전까지의 시프트 찾기
-    double weeklyHours = 0.0;
-    for (var shift in _shifts) {
-      // 본인 시프트 업데이트 시 중복 합산 방지
-      if (excludeShiftId != null && shift.id == excludeShiftId) continue;
-
-      // 시프트가 이번 주인가? && 시작시간이 타겟 시간보다 이전인가?
-      if (shift.startTime.isAfter(mondayStart) ||
-          shift.startTime.isAtSameMomentAs(mondayStart)) {
-        if (shift.startTime.isBefore(targetDate)) {
-          int netMinutes = shift.endTime.difference(shift.startTime).inMinutes -
-              shift.breakTimeMinutes;
-          if (netMinutes > 0) {
-            weeklyHours += (netMinutes / 60.0);
-          }
-        }
-      }
-    }
-    return weeklyHours;
+  void removeShiftPreset(String id) {
+    _shiftPresets.removeWhere((p) => p.id == id);
+    saveData();
+    notifyListeners();
   }
 
-  // [STUDY NOTE]: 주휴수당을 계산합니다. 조건: 주 15시간 이상 근무 & 사용자가 '개근 가정'을 활성화했을 때만.
-  // 계산식: (주 근로시간 / 근무일수) * 시급
-  double calculateWeeklyHolidayAllowance(
-      double weeklyHours, int workDays, double hourlyWage) {
-    if (!_assumeFullAttendance) {
-      return 0.0; // 사용자가 개근(Full Attendance) 토글을 켜지 않으면 주휴수당 발생 안함
-    }
-    if (weeklyHours < 15.0 || workDays <= 0) {
-      return 0.0; // 주 15시간 미만 또는 근무일이 없으면 주휴수당 없음
-    }
-    return (weeklyHours / workDays) * hourlyWage;
+  // ─────────────────────────────────────────────
+  // 통계 보조 메서드
+  // ─────────────────────────────────────────────
+
+  /// 특정 월의 근무 목록 반환
+  List<ShiftEntry> getShiftsForMonth(DateTime month) {
+    return _shifts
+        .where((s) =>
+            s.startTime.year == month.year && s.startTime.month == month.month)
+        .toList();
   }
 
-  // [STUDY NOTE]: 특정 날짜가 속한 '주(Week)'의 총 근무시간, 총 근무일수, 그리고 계산된 주휴수당을 한 번에 반환합니다.
-  Map<String, dynamic> getWeeklySummary(DateTime targetDate) {
-    int daysFromMonday = targetDate.weekday - DateTime.monday;
-    if (daysFromMonday < 0) {
-      daysFromMonday += 7;
+  /// 특정 월의 보너스 목록 반환
+  List<BonusEntry> getBonusesForMonth(DateTime month) {
+    return _bonuses
+        .where((b) => b.date.year == month.year && b.date.month == month.month)
+        .toList();
+  }
+
+  /// 주간 요약 데이터 (주휴수당 포함)
+  Map<String, dynamic> getWeeklySummary(DateTime date) {
+    double workedHours = getWeeklyWorkedHours(date);
+    double weeklyHolidayAllowance = 0.0;
+
+    // 주 15시간 이상 근무 시 주휴수당 발생
+    if (workedHours >= 15.0) {
+      double limitHours = workedHours > 40.0 ? 40.0 : workedHours;
+      weeklyHolidayAllowance = (limitHours / 40.0) * 8.0 * _hourlyWage;
     }
-    DateTime mondayStart =
-        DateTime(targetDate.year, targetDate.month, targetDate.day)
-            .subtract(Duration(days: daysFromMonday));
-    DateTime nextMondayStart = mondayStart.add(const Duration(days: 7));
-
-    double weeklyHours = 0.0;
-    Set<String> uniqueWorkDays = {}; // 근무일수 카운팅을 위한 Set (같은 날 2교대 하더라도 1일로 산정)
-
-    for (var shift in _shifts) {
-      if ((shift.startTime.isAfter(mondayStart) ||
-              shift.startTime.isAtSameMomentAs(mondayStart)) &&
-          shift.startTime.isBefore(nextMondayStart)) {
-        int netMinutes = shift.endTime.difference(shift.startTime).inMinutes -
-            shift.breakTimeMinutes;
-        if (netMinutes > 0) {
-          weeklyHours += (netMinutes / 60.0);
-          uniqueWorkDays.add(
-              '${shift.startTime.year}-${shift.startTime.month}-${shift.startTime.day}');
-        }
-      }
-    }
-
-    int workDays = uniqueWorkDays.length;
-    double allowance =
-        calculateWeeklyHolidayAllowance(weeklyHours, workDays, _hourlyWage);
 
     return {
-      'weeklyHours': weeklyHours,
-      'workDays': workDays,
-      'weeklyHolidayAllowance': allowance,
+      'workedHours': workedHours,
+      'weeklyHolidayAllowance': weeklyHolidayAllowance,
     };
   }
 
-  // [STUDY NOTE]: 선택된 달의 모든 근무 기록을 삭제합니다. (패턴 재생성 전 초기화용)
+  /// 이번 주 누적 근무 시간 계산 (주휴수당 체크용)
+  double getWeeklyWorkedHours(DateTime date) {
+    final firstDayOfWeek = HolidayUtils.getFirstDayOfWeek(date);
+    final lastDayOfWeek = firstDayOfWeek.add(const Duration(days: 7));
+
+    final weeklyShifts = _shifts.where((s) =>
+        s.startTime
+            .isAfter(firstDayOfWeek.subtract(const Duration(seconds: 1))) &&
+        s.startTime.isBefore(lastDayOfWeek));
+
+    return weeklyShifts.fold(0.0, (prev, s) {
+      final netMins =
+          s.endTime.difference(s.startTime).inMinutes - s.breakTimeMinutes;
+      return prev + (netMins / 60.0);
+    });
+  }
+
+  /// 특정 근무를 제외한 이번 주 누적 시간 (저장 시 사용)
+  double getWeeklyWorkedHoursBefore(DateTime date, {String? excludeShiftId}) {
+    final firstDayOfWeek = HolidayUtils.getFirstDayOfWeek(date);
+    final lastDayOfWeek = firstDayOfWeek.add(const Duration(days: 7));
+
+    final weeklyShifts = _shifts.where((s) =>
+        s.id != excludeShiftId &&
+        s.startTime
+            .isAfter(firstDayOfWeek.subtract(const Duration(seconds: 1))) &&
+        s.startTime.isBefore(lastDayOfWeek));
+
+    return weeklyShifts.fold(0.0, (prev, s) {
+      final netMins =
+          s.endTime.difference(s.startTime).inMinutes - s.breakTimeMinutes;
+      return prev + (netMins / 60.0);
+    });
+  }
+
+  /// 이번 달 총 급여 계산 (목표 급여 체크용)
+  double getMonthlyTotalSalary(DateTime date) {
+    final monthShifts = getShiftsForMonth(date);
+    final monthBonuses = getBonusesForMonth(date);
+
+    double shiftTotal = monthShifts.fold(0.0, (prev, s) => prev + s.totalPay);
+    double bonusTotal = monthBonuses.fold(0.0, (prev, b) => prev + b.amount);
+
+    // 주휴수당 합산
+    double weeklyHolidayTotal = 0.0;
+    Map<String, List<ShiftEntry>> shiftsByWeek = {};
+    for (var s in monthShifts) {
+      final weekKey = HolidayUtils.getFirstDayOfWeek(s.startTime)
+          .toIso8601String()
+          .split('T')[0];
+      if (!shiftsByWeek.containsKey(weekKey)) shiftsByWeek[weekKey] = [];
+      shiftsByWeek[weekKey]!.add(s);
+    }
+    for (var weekKey in shiftsByWeek.keys) {
+      DateTime weekDate = DateTime.parse(weekKey);
+      weeklyHolidayTotal +=
+          getWeeklySummary(weekDate)['weeklyHolidayAllowance'];
+    }
+
+    return shiftTotal + bonusTotal + weeklyHolidayTotal;
+  }
+
+  /// 패턴 생성 로직
+  Future<void> generatePatternShifts({
+    required DateTime month,
+    required List<dynamic> pattern,
+    required DateTime startFrom,
+  }) async {
+    int daysInMonth = DateUtils.getDaysInMonth(month.year, month.month);
+
+    for (int i = 0; i < daysInMonth; i++) {
+      DateTime currentDay = DateTime(month.year, month.month, i + 1);
+      if (currentDay.isBefore(startFrom)) continue;
+
+      int diffDays = currentDay.difference(startFrom).inDays;
+      if (diffDays < 0) continue;
+
+      var p = pattern[diffDays % pattern.length];
+      if (p != null && p is ShiftPreset) {
+        final startTime = TimeOfDay(
+            hour: int.parse(p.startTime.split(':')[0]),
+            minute: int.parse(p.startTime.split(':')[1]));
+        final endTime = TimeOfDay(
+            hour: int.parse(p.endTime.split(':')[0]),
+            minute: int.parse(p.endTime.split(':')[1]));
+
+        final startDT = DateTime(currentDay.year, currentDay.month,
+            currentDay.day, startTime.hour, startTime.minute);
+        var endDT = DateTime(currentDay.year, currentDay.month, currentDay.day,
+            endTime.hour, endTime.minute);
+        if (endDT.isBefore(startDT) || endDT.isAtSameMomentAs(startDT)) {
+          endDT = endDT.add(const Duration(days: 1));
+        }
+
+        final totalPay = ShiftCalculator.calculateTotalPay(
+          startTime: startDT,
+          endTime: endDT,
+          breakTimeMinutes: p.breakTimeMinutes,
+          isHoliday: HolidayUtils.isHoliday(currentDay),
+          hourlyWage: _hourlyWage,
+          isFiveOrMoreEmployees: _isFiveOrMoreEmployees,
+          payMultiplier: p.multiplier,
+          weeklyWorkedHours: 0,
+        );
+
+        final entry = ShiftEntry(
+          id: DateTime.now().millisecondsSinceEpoch.toString() + i.toString(),
+          date: currentDay,
+          startTime: startDT,
+          endTime: endDT,
+          breakTimeMinutes: p.breakTimeMinutes,
+          isHoliday: HolidayUtils.isHoliday(currentDay),
+          hourlyWage: _hourlyWage,
+          payMultiplier: p.multiplier,
+          totalPay: totalPay,
+        );
+        _shifts.add(entry);
+      }
+    }
+    _shifts.sort((a, b) => b.startTime.compareTo(a.startTime));
+    await saveData();
+    notifyListeners();
+  }
+
   Future<void> clearShiftsForMonth(DateTime month) async {
     _shifts.removeWhere((s) =>
         s.startTime.year == month.year && s.startTime.month == month.month);
@@ -456,134 +578,50 @@ class SalaryProvider with ChangeNotifier {
     notifyListeners();
   }
 
-  // [STUDY NOTE]: 사용자가 정의한 패턴(리스트)을 해당 달 전체에 반복 적용합니다.
-  Future<void> generatePatternShifts({
-    required DateTime month,
-    required List<ShiftPreset?> pattern, // null은 '휴무'를 의미함
-    required DateTime startFrom,
-  }) async {
-    if (pattern.isEmpty) return;
+  // ─────────────────────────────────────────────
+  // 백업/복원용 JSON 내보내기/가져오기
+  // ─────────────────────────────────────────────
 
-    // 해당 달의 마지막 날 구하기
-    final lastDay = DateTime(month.year, month.month + 1, 0).day;
-
-    int patternIdx = 0;
-    List<ShiftEntry> newShifts = [];
-
-    for (int day = 1; day <= lastDay; day++) {
-      final currentDay = DateTime(month.year, month.month, day);
-
-      // 시작일 이전은 건너뜀
-      if (currentDay
-          .isBefore(DateTime(startFrom.year, startFrom.month, startFrom.day))) {
-        continue;
-      }
-
-      final preset = pattern[patternIdx % pattern.length];
-      patternIdx++;
-
-      if (preset == null) continue; // 휴무면 스킵
-
-      // 이미 해당 날짜에 근무가 있는지 확인 (중복 방지)
-      bool exists = _shifts.any((s) =>
-          s.startTime.year == currentDay.year &&
-          s.startTime.month == currentDay.month &&
-          s.startTime.day == currentDay.day);
-      if (exists) continue;
-
-      // 시프트 데이터 생성
-      final startTimeParts = preset.startTime.split(':');
-      final endTimeParts = preset.endTime.split(':');
-
-      DateTime shiftStart = DateTime(
-        currentDay.year,
-        currentDay.month,
-        currentDay.day,
-        int.parse(startTimeParts[0]),
-        int.parse(startTimeParts[1]),
-      );
-
-      DateTime shiftEnd = DateTime(
-        currentDay.year,
-        currentDay.month,
-        currentDay.day,
-        int.parse(endTimeParts[0]),
-        int.parse(endTimeParts[1]),
-      );
-
-      // 퇴근 시간이 다음 날인 경우 처리 (예: 23:00 ~ 07:00)
-      if (shiftEnd.isBefore(shiftStart) ||
-          shiftEnd.isAtSameMomentAs(shiftStart)) {
-        shiftEnd = shiftEnd.add(const Duration(days: 1));
-      }
-
-      final isHoliday = HolidayUtils.isHoliday(currentDay);
-
-      // 급여 계산
-      final totalPay = ShiftCalculator.calculateTotalPay(
-        startTime: shiftStart,
-        endTime: shiftEnd,
-        hourlyWage: _hourlyWage,
-        breakTimeMinutes: preset.breakTimeMinutes,
-        isHoliday: isHoliday,
-        isFiveOrMoreEmployees: _isFiveOrMoreEmployees,
-        payMultiplier: preset.multiplier,
-      );
-
-      newShifts.add(ShiftEntry(
-        id: '${DateTime.now().millisecondsSinceEpoch}_$day',
-        date: currentDay,
-        startTime: shiftStart,
-        endTime: shiftEnd,
-        breakTimeMinutes: preset.breakTimeMinutes,
-        isHoliday: isHoliday,
-        hourlyWage: _hourlyWage,
-        payMultiplier: preset.multiplier,
-        totalPay: totalPay,
-        iconType: preset.iconType,
-      ));
-    }
-
-    if (newShifts.isNotEmpty) {
-      _shifts.addAll(newShifts);
-      _shifts.sort((a, b) => b.startTime.compareTo(a.startTime));
-      await saveData();
-      notifyListeners();
-    }
-  }
-
-  // [STUDY NOTE]: 앱의 모든 데이터를 JSON 문자열로 직렬화합니다. (백업용)
   String exportToJson() {
-    final data = {
-      'version': 1,
-      'exportedAt': DateTime.now().toIso8601String(),
+    final Map<String, dynamic> data = {
       'hourlyWage': _hourlyWage,
       'isFiveOrMoreEmployees': _isFiveOrMoreEmployees,
       'taxRate': _taxRate,
       'isShiftWorker': _isShiftWorker,
+      'hasCompletedOnboarding': _hasCompletedOnboarding,
       'assumeFullAttendance': _assumeFullAttendance,
+      'hasAgreedToLegal': _hasAgreedToLegal,
       'shifts': _shifts.map((s) => s.toMap()).toList(),
       'bonuses': _bonuses.map((b) => b.toMap()).toList(),
       'shiftPresets': _shiftPresets.map((p) => p.toMap()).toList(),
       'workplacePresets': _workplacePresets.map((p) => p.toMap()).toList(),
       'activeWorkplacePresetId': _activeWorkplacePresetId,
+      'allowanceTemplates': _allowanceTemplates.map((t) => t.toMap()).toList(),
     };
     return jsonEncode(data);
   }
 
-  // [STUDY NOTE]: JSON 문자열로부터 앱의 모든 데이터를 복원합니다.
-  // 기존 데이터를 모두 덮어씁니다.
   Future<void> importFromJson(String jsonString) async {
-    final data = jsonDecode(jsonString) as Map<String, dynamic>;
+    final Map<String, dynamic> data = jsonDecode(jsonString);
 
-    _hourlyWage = (data['hourlyWage'] as num?)?.toDouble() ?? _hourlyWage;
-    _isFiveOrMoreEmployees =
-        data['isFiveOrMoreEmployees'] ?? _isFiveOrMoreEmployees;
-    _taxRate = (data['taxRate'] as num?)?.toDouble() ?? _taxRate;
-    _isShiftWorker = data['isShiftWorker'] ?? _isShiftWorker;
-    _assumeFullAttendance =
-        data['assumeFullAttendance'] ?? _assumeFullAttendance;
-    _activeWorkplacePresetId = data['activeWorkplacePresetId'];
+    if (data['hourlyWage'] != null) _hourlyWage = data['hourlyWage'];
+    if (data['isFiveOrMoreEmployees'] != null) {
+      _isFiveOrMoreEmployees = data['isFiveOrMoreEmployees'];
+    }
+    if (data['taxRate'] != null) _taxRate = data['taxRate'];
+    if (data['isShiftWorker'] != null) _isShiftWorker = data['isShiftWorker'];
+    if (data['hasCompletedOnboarding'] != null) {
+      _hasCompletedOnboarding = data['hasCompletedOnboarding'];
+    }
+    if (data['assumeFullAttendance'] != null) {
+      _assumeFullAttendance = data['assumeFullAttendance'];
+    }
+    if (data['hasAgreedToLegal'] != null) {
+      _hasAgreedToLegal = data['hasAgreedToLegal'];
+    }
+    if (data['activeWorkplacePresetId'] != null) {
+      _activeWorkplacePresetId = data['activeWorkplacePresetId'];
+    }
 
     if (data['shifts'] != null) {
       _shifts = (data['shifts'] as List)
@@ -606,6 +644,12 @@ class SalaryProvider with ChangeNotifier {
       _workplacePresets = (data['workplacePresets'] as List)
           .map((e) => WorkplacePreset.fromMap(e as Map<String, dynamic>))
           .toList();
+    }
+    if (data['allowanceTemplates'] != null) {
+      _allowanceTemplates = (data['allowanceTemplates'] as List)
+          .map((e) => AllowanceTemplate.fromMap(e as Map<String, dynamic>))
+          .toList();
+      _sortAllowanceTemplates();
     }
 
     await saveData();
