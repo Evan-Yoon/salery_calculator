@@ -3,15 +3,10 @@ import 'package:provider/provider.dart';
 import '../providers/salary_provider.dart';
 import 'package:table_calendar/table_calendar.dart';
 import '../models/shift_entry.dart';
-import '../models/bonus_entry.dart';
-import '../models/allowance_template.dart';
 import '../utils/shift_calculator.dart';
 import '../utils/holiday_utils.dart';
 import '../widgets/add_shift/preset_chips.dart';
 import '../widgets/add_shift/date_time_card.dart';
-import '../premium/premium_state.dart';
-import '../premium/premium_features.dart';
-import '../screens/paywall_page.dart';
 import '../providers/notification_settings_provider.dart';
 
 // [STUDY NOTE]: StatefulWidget은 화면의 상태(데이터)가 변할 때마다 화면을 다시 그릴 수 있는 위젯입니다.
@@ -113,8 +108,6 @@ class _AddShiftPageState extends State<AddShiftPage> {
                   const SizedBox(height: 24),
                   _buildSectionTitle('추가 옵션'),
                   _buildOptionsCard(),
-                  const SizedBox(height: 24),
-                  _buildAllowanceTemplateSection(),
                 ],
               ),
             ),
@@ -532,184 +525,6 @@ class _AddShiftPageState extends State<AddShiftPage> {
   }
 
   // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-  // 수당 템플릿 섹션
-  // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-
-  Widget _buildAllowanceTemplateSection() {
-    final provider = Provider.of<SalaryProvider>(context);
-    final premiumProvider = Provider.of<PremiumProvider>(context);
-    final isPremium =
-        premiumProvider.hasFeature(PremiumFeature.allowanceTemplates);
-    final activeTemplates = provider.activeAllowanceTemplates;
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Row(
-          children: [
-            _buildSectionTitle('수당 템플릿에서 불러오기'),
-            const SizedBox(width: 6),
-            if (!isPremium)
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                decoration: BoxDecoration(
-                  color: Colors.amber.withValues(alpha: 0.2),
-                  borderRadius: BorderRadius.circular(4),
-                ),
-                child: const Text('Premium',
-                    style: TextStyle(
-                        fontSize: 10,
-                        color: Colors.amber,
-                        fontWeight: FontWeight.bold)),
-              ),
-          ],
-        ),
-        const SizedBox(height: 4),
-        if (!isPremium)
-          InkWell(
-            onTap: () => Navigator.push(
-              context,
-              MaterialPageRoute(
-                builder: (_) => const PaywallPage(
-                  entryPoint: 'add_shift_allowance_template',
-                  featureHint: '수당 템플릿',
-                ),
-              ),
-            ),
-            borderRadius: BorderRadius.circular(12),
-            child: Container(
-              padding: const EdgeInsets.all(14),
-              decoration: BoxDecoration(
-                color: Colors.amber.withValues(alpha: 0.05),
-                borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: Colors.amber.withValues(alpha: 0.3)),
-              ),
-              child: const Row(
-                children: [
-                  Icon(Icons.lock, color: Colors.amber, size: 16),
-                  SizedBox(width: 8),
-                  Text('수당 템플릿 기능은 Premium 전용입니다.',
-                      style: TextStyle(color: Colors.amber, fontSize: 13)),
-                ],
-              ),
-            ),
-          )
-        else if (activeTemplates.isEmpty)
-          Container(
-            padding: const EdgeInsets.all(14),
-            decoration: BoxDecoration(
-              color: Theme.of(context).cardTheme.color,
-              borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: Colors.white10),
-            ),
-            child: const Text('활성화된 수당 템플릿이 없습니다. 설정 > 수당 템플릿에서 추가하세요.',
-                style: TextStyle(color: Colors.grey, fontSize: 13)),
-          )
-        else
-          Wrap(
-            spacing: 8,
-            runSpacing: 8,
-            children: activeTemplates
-                .map((t) => ActionChip(
-                      avatar: const Icon(Icons.add, size: 16),
-                      label: Text(t.name),
-                      onPressed: () => _onTemplateChipTapped(t),
-                    ))
-                .toList(),
-          ),
-      ],
-    );
-  }
-
-  void _onTemplateChipTapped(AllowanceTemplate template) {
-    // 현재 순근무시간 계산
-    final start = DateTime(_selectedDate.year, _selectedDate.month,
-        _selectedDate.day, _startTime.hour, _startTime.minute);
-    var end = DateTime(_selectedDate.year, _selectedDate.month,
-        _selectedDate.day, _endTime.hour, _endTime.minute);
-    if (end.isBefore(start)) end = end.add(const Duration(days: 1));
-    final totalMins = end.difference(start).inMinutes;
-    final netMins = (totalMins - _breakTimeMinutes).clamp(0, totalMins);
-    final netHours = netMins / 60.0;
-
-    final calculated = template.calculateAmount(netHours);
-    final amountCtrl =
-        TextEditingController(text: calculated.toStringAsFixed(0));
-
-    showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      backgroundColor: Colors.transparent,
-      builder: (ctx) => Padding(
-        padding: EdgeInsets.only(
-          bottom: MediaQuery.of(ctx).viewInsets.bottom,
-          left: 16,
-          right: 16,
-          top: 16,
-        ),
-        child: Container(
-          padding: const EdgeInsets.all(20),
-          decoration: BoxDecoration(
-            color: Theme.of(context).scaffoldBackgroundColor,
-            borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
-          ),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text('수당 추가: ${template.name}',
-                  style: const TextStyle(
-                      fontSize: 18, fontWeight: FontWeight.bold)),
-              if (template.isPerHour)
-                Padding(
-                  padding: const EdgeInsets.only(top: 4),
-                  child: Text(
-                      '순근무 ${netHours.toStringAsFixed(1)}시간 × ₩${template.amount.toInt()} = ₩${calculated.toInt()}',
-                      style: const TextStyle(color: Colors.grey, fontSize: 12)),
-                ),
-              const SizedBox(height: 16),
-              TextField(
-                controller: amountCtrl,
-                keyboardType: TextInputType.number,
-                decoration: const InputDecoration(
-                  labelText: '추가 금액 (원)',
-                  hintText: '교양 수정 가능',
-                  prefixText: '₩ ',
-                ),
-              ),
-              const SizedBox(height: 20),
-              SizedBox(
-                width: double.infinity,
-                child: ElevatedButton(
-                  onPressed: () {
-                    final amt = double.tryParse(amountCtrl.text) ?? calculated;
-                    if (amt > 0) {
-                      final provider =
-                          Provider.of<SalaryProvider>(context, listen: false);
-                      provider.addBonus(BonusEntry(
-                        id: DateTime.now().millisecondsSinceEpoch.toString(),
-                        date: _selectedDate,
-                        amount: amt,
-                        description: template.name,
-                      ));
-                      Navigator.pop(ctx);
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(
-                            content: Text(
-                                "'${template.name}' ₩${amt.toInt()}이 수당으로 추가되었습니다.")),
-                      );
-                    }
-                  },
-                  child: const Text('수당 추가'),
-                ),
-              ),
-              const SizedBox(height: 8),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
 
   void _showMultiplierEditDialog() {
     final TextEditingController controller =

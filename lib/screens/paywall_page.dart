@@ -49,10 +49,18 @@ class _PaywallPageState extends State<PaywallPage> {
   void _onSubscribe() async {
     final iapService =
         Provider.of<PremiumProvider>(context, listen: false).iapService;
-    if (_isYearlySelected) {
-      await iapService.buyYearly();
-    } else {
-      await iapService.buyMonthly();
+    try {
+      if (_isYearlySelected) {
+        await iapService.buyYearly();
+      } else {
+        await iapService.buyMonthly();
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('상품 결제를 진행할 수 없습니다. 잠시 후 다시 시도해주세요.')),
+        );
+      }
     }
   }
 
@@ -123,7 +131,7 @@ class _PaywallPageState extends State<PaywallPage> {
                   _buildFeatureCard(
                       Icons.receipt_long, '증빙용 월말 정산 리포트 및 엑셀 내보내기'),
                   _buildFeatureCard(Icons.cloud_sync, '기기 변경 시 안전한 데이터 백업/복원'),
-                  _buildFeatureCard(Icons.layers, '수당 템플릿 및 프리셋 공유'),
+                  _buildFeatureCard(Icons.monetization_on, '이번 달 예상 급여(세후) 확인'),
                   _buildFeatureCard(
                       Icons.notifications_active, '근무 전/월말/주휴 스마트 알림 제공'),
 

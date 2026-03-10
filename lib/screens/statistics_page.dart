@@ -123,6 +123,10 @@ class _StatisticsPageState extends State<StatisticsPage> {
                 _buildUpgradeBanner(),
                 const SizedBox(height: 24),
               ],
+              _buildTargetAmountCard(provider),
+              const SizedBox(height: 24),
+              _buildEstimatedSalaryCard(provider, premiumProvider),
+              const SizedBox(height: 24),
               _buildViewToggler(),
               const SizedBox(height: 24),
               _buildBarChart(shifts, bonuses, taxRate),
@@ -183,6 +187,236 @@ class _StatisticsPageState extends State<StatisticsPage> {
             const Icon(Icons.chevron_right, color: Colors.grey),
           ],
         ),
+      ),
+    );
+  }
+
+  Widget _buildTargetAmountCard(SalaryProvider provider) {
+    final target = provider.monthlyTargetAmount;
+    final gross = provider.getMonthlyTotalSalary(DateTime.now());
+
+    if (target == null || target <= 0) {
+      return Container(
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: Theme.of(context).cardTheme.color,
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: Colors.white10),
+        ),
+        child: Column(
+          children: [
+            const Text('이번 달 목표 금액이 설정되지 않았습니다.',
+                style: TextStyle(color: Colors.grey, fontSize: 13)),
+            const SizedBox(height: 12),
+            ElevatedButton(
+              onPressed: () => _showTargetAmountDialog(provider),
+              child: const Text('목표 금액 설정'),
+            ),
+          ],
+        ),
+      );
+    }
+
+    final ratio = (gross / target).clamp(0.0, 1.0);
+    final remain = target > gross ? target - gross : 0.0;
+
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Theme.of(context).cardTheme.color,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(
+            color:
+                Theme.of(context).colorScheme.primary.withValues(alpha: 0.3)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              const Text('이번 달 목표 금액',
+                  style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15)),
+              IconButton(
+                  onPressed: () => _showTargetAmountDialog(provider),
+                  icon: const Icon(Icons.edit, size: 18, color: Colors.grey)),
+            ],
+          ),
+          Text('₩${formatter.format(target)}',
+              style:
+                  const TextStyle(fontSize: 24, fontWeight: FontWeight.bold)),
+          const SizedBox(height: 16),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text('현재 ${(ratio * 100).toStringAsFixed(1)}% 달성',
+                  style: TextStyle(
+                      color: Theme.of(context).colorScheme.primary,
+                      fontWeight: FontWeight.bold,
+                      fontSize: 13)),
+              if (remain > 0)
+                Text('목표까지 ₩${formatter.format(remain)} 남음',
+                    style: const TextStyle(color: Colors.grey, fontSize: 12))
+              else
+                const Text('목표 달성 완료! 🎉',
+                    style: TextStyle(
+                        color: Colors.green,
+                        fontWeight: FontWeight.bold,
+                        fontSize: 12)),
+            ],
+          ),
+          const SizedBox(height: 8),
+          LinearProgressIndicator(
+            value: ratio,
+            backgroundColor: Colors.white10,
+            color: Theme.of(context).colorScheme.primary,
+            borderRadius: BorderRadius.circular(8),
+            minHeight: 12,
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showTargetAmountDialog(SalaryProvider provider) {
+    final ctrl = TextEditingController(
+        text: provider.monthlyTargetAmount?.toStringAsFixed(0) ?? '');
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('목표 금액 설정'),
+        content: TextField(
+          controller: ctrl,
+          keyboardType: TextInputType.number,
+          decoration:
+              const InputDecoration(hintText: '예: 2000000', prefixText: '₩ '),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () {
+              provider.setMonthlyTargetAmount(null);
+              Navigator.pop(ctx);
+            },
+            child: const Text('삭제', style: TextStyle(color: Colors.red)),
+          ),
+          TextButton(
+              onPressed: () => Navigator.pop(ctx), child: const Text('취소')),
+          ElevatedButton(
+            onPressed: () {
+              final val = double.tryParse(ctrl.text);
+              if (val != null && val > 0) {
+                provider.setMonthlyTargetAmount(val);
+                Navigator.pop(ctx);
+              }
+            },
+            child: const Text('저장'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildEstimatedSalaryCard(
+      SalaryProvider provider, PremiumProvider premiumProvider) {
+    if (!premiumProvider.isPremium) {
+      return InkWell(
+        onTap: () => Navigator.push(
+            context,
+            MaterialPageRoute(
+                builder: (_) => const PaywallPage(
+                    entryPoint: "estimated_net_salary_locked",
+                    featureHint: "이번 달 예상 급여(세후)"))),
+        borderRadius: BorderRadius.circular(16),
+        child: Container(
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            color: Theme.of(context).cardTheme.color,
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(color: Colors.white10),
+          ),
+          child: const Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text('이번 달 예상 급여(세후) 🔒',
+                  style: TextStyle(color: Colors.grey, fontSize: 15)),
+              Text('Premium',
+                  style: TextStyle(
+                      color: Colors.amber,
+                      fontWeight: FontWeight.bold,
+                      fontSize: 12)),
+            ],
+          ),
+        ),
+      );
+    }
+
+    final estimatedNet = provider.getEstimatedMonthlyNetSalary(DateTime.now());
+    final estimatedGross =
+        provider.getEstimatedMonthlyGrossSalary(DateTime.now());
+
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Theme.of(context).cardTheme.color,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: Colors.green.withValues(alpha: 0.3)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: const [
+              Icon(Icons.monetization_on, color: Colors.green, size: 20),
+              SizedBox(width: 8),
+              Text('이번 달 예상 급여(세후)',
+                  style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15)),
+            ],
+          ),
+          const SizedBox(height: 4),
+          const Text('현재 근무 기록 기준 추정치',
+              style: TextStyle(color: Colors.grey, fontSize: 12)),
+          const SizedBox(height: 16),
+          if (estimatedNet > 0) ...[
+            Text('₩${formatter.format(estimatedNet)}',
+                style: const TextStyle(
+                    fontSize: 28,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.green)),
+            const SizedBox(height: 12),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                const Text('예상 월 총 세전 급여',
+                    style: TextStyle(color: Colors.grey, fontSize: 13)),
+                Text('₩${formatter.format(estimatedGross)}',
+                    style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 13,
+                        fontWeight: FontWeight.bold)),
+              ],
+            ),
+            const SizedBox(height: 4),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                const Text('적용 세율 (간편 추정)',
+                    style: TextStyle(color: Colors.grey, fontSize: 13)),
+                Text('${(provider.taxRate * 100).toStringAsFixed(1)}%',
+                    style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 13,
+                        fontWeight: FontWeight.bold)),
+              ],
+            ),
+            const SizedBox(height: 12),
+            const Text('※ 실제 지급액과 다를 수 있습니다.',
+                style: TextStyle(color: Colors.redAccent, fontSize: 10)),
+          ] else ...[
+            const Text('아직 예측을 위한 데이터가 충분하지 않습니다.\n근무 기록을 더 추가해 주세요.',
+                style:
+                    TextStyle(color: Colors.grey, height: 1.5, fontSize: 13)),
+          ],
+        ],
       ),
     );
   }

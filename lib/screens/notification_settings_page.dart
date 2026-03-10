@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:intl/intl.dart';
 import '../providers/notification_settings_provider.dart';
+import '../providers/salary_provider.dart';
 
 class NotificationSettingsPage extends StatelessWidget {
   const NotificationSettingsPage({super.key});
@@ -58,20 +59,21 @@ class NotificationSettingsPage extends StatelessWidget {
                     onChanged: (_) => provider.toggleMonthlySummary(),
                   ),
                   const Divider(height: 1, color: Colors.white10),
-                  _buildNotifTile(
-                    context,
-                    icon: Icons.emoji_events_outlined,
-                    title: '목표 급여 달성 알림',
-                    subtitle: provider.salaryGoalAmount > 0
-                        ? '목표: ₩${NumberFormat("#,###").format(provider.salaryGoalAmount.toInt())} 달성 시 알림'
-                        : '목표 금액을 설정하면 달성 시 알림을 보냅니다.',
-                    value: provider.salaryGoalEnabled,
-                    onChanged: (_) => provider.toggleSalaryGoal(),
-                    trailing2: IconButton(
-                      icon:
-                          const Icon(Icons.edit, size: 18, color: Colors.grey),
-                      onPressed: () => _showGoalAmountDialog(context, provider),
-                    ),
+                  Consumer<SalaryProvider>(
+                    builder: (context, salaryProvider, _) {
+                      final target = salaryProvider.monthlyTargetAmount;
+                      final targetStr = target != null && target > 0
+                          ? '목표: ₩${NumberFormat("#,###").format(target.toInt())} 달성 시 알림'
+                          : '설정한 목표 금액을 달성하면 알림을 보냅니다.';
+                      return _buildNotifTile(
+                        context,
+                        icon: Icons.emoji_events_outlined,
+                        title: '목표 급여 달성 알림',
+                        subtitle: targetStr,
+                        value: provider.salaryGoalEnabled,
+                        onChanged: (_) => provider.toggleSalaryGoal(),
+                      );
+                    },
                   ),
                 ],
               ),
@@ -189,64 +191,6 @@ class NotificationSettingsPage extends StatelessWidget {
               '알림 권한이 없을 경우 기기 설정 > 앱 > 알림에서 허용해 주세요.',
               style: TextStyle(color: Colors.grey, fontSize: 12, height: 1.5),
             ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  void _showGoalAmountDialog(
-      BuildContext context, NotificationSettingsProvider provider) {
-    final fmt = NumberFormat('#,###');
-    final ctrl = TextEditingController(
-      text: provider.salaryGoalAmount > 0
-          ? fmt.format(provider.salaryGoalAmount.toInt())
-          : '',
-    );
-
-    showDialog(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        title: const Text('목표 급여 설정',
-            style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
-        content: TextField(
-          controller: ctrl,
-          keyboardType: TextInputType.number,
-          decoration: const InputDecoration(
-            hintText: '예: 2,000,000',
-            prefixText: '₩ ',
-          ),
-          onChanged: (text) {
-            final raw = text.replaceAll(RegExp(r'[^0-9]'), '');
-            if (raw.isEmpty) {
-              ctrl.value = const TextEditingValue(text: '');
-              return;
-            }
-            final formatted = fmt.format(int.parse(raw));
-            ctrl.value = TextEditingValue(
-              text: formatted,
-              selection: TextSelection.collapsed(offset: formatted.length),
-            );
-          },
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx),
-            child: const Text('취소', style: TextStyle(color: Colors.grey)),
-          ),
-          ElevatedButton(
-            onPressed: () {
-              final raw = ctrl.text.replaceAll(RegExp(r'[^0-9]'), '');
-              final amount = double.tryParse(raw) ?? 0;
-              if (amount > 0) {
-                provider.setSalaryGoalAmount(amount);
-                if (!provider.salaryGoalEnabled) {
-                  provider.toggleSalaryGoal();
-                }
-              }
-              Navigator.pop(ctx);
-            },
-            child: const Text('저장'),
           ),
         ],
       ),

@@ -88,8 +88,7 @@ class LocalFallbackHolidayRepository implements HolidayRepository {
   }
 }
 
-// [STUDY NOTE]: 공공데이터포털(Data.go.kr) 특일정보 API 연동용 클래스입니다. (예시 모형)
-// 실제 출시 전에는 키 발급 및 정식 연동 코드를 넣으면 됩니다.
+// [STUDY NOTE]: 공공데이터포털(Data.go.kr) 특일정보 API 연동용 클래스입니다
 class RemoteHolidayRepository implements HolidayRepository {
   final String apiKey;
   RemoteHolidayRepository({required this.apiKey});

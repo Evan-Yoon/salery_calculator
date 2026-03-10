@@ -58,21 +58,25 @@ class IapService {
 
   Future<void> buyMonthly() async {
     try {
+      if (_products.isEmpty) throw Exception('상품 정보를 불러오지 못했습니다 (빈 상태).');
       final product = _products.firstWhere((p) => p.id == monthlyId);
       final purchaseParam = PurchaseParam(productDetails: product);
       await _iap.buyNonConsumable(purchaseParam: purchaseParam);
     } catch (e) {
       debugPrint("buyMonthly error: $e");
+      rethrow;
     }
   }
 
   Future<void> buyYearly() async {
     try {
+      if (_products.isEmpty) throw Exception('상품 정보를 불러오지 못했습니다 (빈 상태).');
       final product = _products.firstWhere((p) => p.id == yearlyId);
       final purchaseParam = PurchaseParam(productDetails: product);
       await _iap.buyNonConsumable(purchaseParam: purchaseParam);
     } catch (e) {
       debugPrint("buyYearly error: $e");
+      rethrow;
     }
   }
 

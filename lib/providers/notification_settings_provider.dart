@@ -25,14 +25,10 @@ class NotificationSettingsProvider with ChangeNotifier {
   bool _weeklyHolidayEnabled = false;
   bool _salaryGoalEnabled = false;
 
-  // 목표 급여 (설정 후 SalaryProvider와 비교)
-  double _salaryGoalAmount = 0.0;
-
   bool get shiftReminderEnabled => _shiftReminderEnabled;
   bool get monthlySummaryEnabled => _monthlySummaryEnabled;
   bool get weeklyHolidayEnabled => _weeklyHolidayEnabled;
   bool get salaryGoalEnabled => _salaryGoalEnabled;
-  double get salaryGoalAmount => _salaryGoalAmount;
 
   NotificationSettingsProvider() {
     _loadSettings();
@@ -46,8 +42,6 @@ class NotificationSettingsProvider with ChangeNotifier {
       _monthlySummaryEnabled = prefs.getBool(_kMonthlySummary) ?? true;
       _weeklyHolidayEnabled = prefs.getBool(_kWeeklyHoliday) ?? false;
       _salaryGoalEnabled = prefs.getBool(_kSalaryGoal) ?? false;
-      _salaryGoalAmount =
-          prefs.getDouble('notification_salary_goal_amount') ?? 0.0;
       notifyListeners();
     } catch (e) {
       debugPrint('[NotificationSettingsProvider] load error: $e');
@@ -62,8 +56,6 @@ class NotificationSettingsProvider with ChangeNotifier {
       await prefs.setBool(_kMonthlySummary, _monthlySummaryEnabled);
       await prefs.setBool(_kWeeklyHoliday, _weeklyHolidayEnabled);
       await prefs.setBool(_kSalaryGoal, _salaryGoalEnabled);
-      await prefs.setDouble(
-          'notification_salary_goal_amount', _salaryGoalAmount);
     } catch (e) {
       debugPrint('[NotificationSettingsProvider] save error: $e');
     }
@@ -99,12 +91,6 @@ class NotificationSettingsProvider with ChangeNotifier {
     notifyListeners();
   }
 
-  Future<void> setSalaryGoalAmount(double amount) async {
-    _salaryGoalAmount = amount;
-    await _saveSettings();
-    notifyListeners();
-  }
-
   // ─── 조건부 알림 체크 (SalaryProvider 변경 시 호출) ──
   Future<void> checkWeeklyHoliday(double weeklyHours) async {
     if (!_weeklyHolidayEnabled) return;
@@ -115,8 +101,21 @@ class NotificationSettingsProvider with ChangeNotifier {
 
   Future<void> checkSalaryGoal(double currentSalary) async {
     if (!_salaryGoalEnabled) return;
-    if (_salaryGoalAmount > 0 && currentSalary >= _salaryGoalAmount) {
-      await NotificationService().showSalaryGoalNotification();
+
+    final prefs = await SharedPreferences.getInstance();
+    final targetStr = prefs.getString('monthly_target_amount');
+    if (targetStr == null) return;
+
+    final targetAmount = double.tryParse(targetStr) ?? 0;
+    if (targetAmount > 0 && currentSalary >= targetAmount) {
+      final now = DateTime.now();
+      final monthKey = 'goal_notified_${now.year}_${now.month}';
+      final isNotified = prefs.getBool(monthKey) ?? false;
+
+      if (!isNotified) {
+        await NotificationService().showSalaryGoalNotification();
+        await prefs.setBool(monthKey, true);
+      }
     }
   }
 }

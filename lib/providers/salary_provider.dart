@@ -6,7 +6,6 @@ import '../models/shift_entry.dart';
 import '../models/bonus_entry.dart';
 import '../models/shift_preset.dart';
 import '../models/workplace_preset.dart';
-import '../models/allowance_template.dart';
 import '../services/notification_service.dart';
 import '../utils/shift_calculator.dart';
 import '../utils/holiday_utils.dart';
@@ -31,8 +30,8 @@ class SalaryProvider with ChangeNotifier {
   List<WorkplacePreset> _workplacePresets = [];
   String? _activeWorkplacePresetId;
 
-  // [STUDY NOTE]: 수당 템플릿 목록 (updatedAt 내림차순 정렬)
-  List<AllowanceTemplate> _allowanceTemplates = [];
+  // [STUDY NOTE]: 이번 달 목표 금액
+  double? _monthlyTargetAmount;
 
   // [STUDY NOTE]: 외부에서 데이터를 가져다 쓸 수 있도록 열어둔 getter 함수입니다. 외부에서는 데이터를 직접 변경할 수 없습니다.
   List<ShiftEntry> get shifts => _shifts;
@@ -47,9 +46,7 @@ class SalaryProvider with ChangeNotifier {
   bool get hasAgreedToLegal => _hasAgreedToLegal;
   List<WorkplacePreset> get workplacePresets => _workplacePresets;
   String? get activeWorkplacePresetId => _activeWorkplacePresetId;
-  List<AllowanceTemplate> get allowanceTemplates => _allowanceTemplates;
-  List<AllowanceTemplate> get activeAllowanceTemplates =>
-      _allowanceTemplates.where((t) => t.isActive).toList();
+  double? get monthlyTargetAmount => _monthlyTargetAmount;
 
   // [STUDY NOTE]: 등록된 모든 근무 기록의 총 급여와 비정기 급여를 합산하여 반환하는 Getter
   double get totalSalary {
@@ -90,22 +87,10 @@ class SalaryProvider with ChangeNotifier {
     _hasAgreedToLegal = prefs.getBool('hasAgreedToLegal') ?? false;
     _activeWorkplacePresetId = prefs.getString('activeWorkplacePresetId');
 
-    // 수당 템플릿 로드
-    final String? allowanceTemplatesString =
-        prefs.getString('allowance_templates');
-    if (allowanceTemplatesString != null) {
-      try {
-        final List<dynamic> decoded = jsonDecode(allowanceTemplatesString);
-        _allowanceTemplates =
-            decoded.map((e) => AllowanceTemplate.fromMap(e)).toList();
-        _sortAllowanceTemplates();
-      } catch (e) {
-        debugPrint('Error loading allowance templates: $e');
-        _allowanceTemplates = defaultAllowanceTemplates;
-      }
-    } else {
-      // 최초 실행: 기본 템플릿 자동 생성
-      _allowanceTemplates = defaultAllowanceTemplates;
+    // 목표 금액 로드
+    final String? targetString = prefs.getString('monthly_target_amount');
+    if (targetString != null) {
+      _monthlyTargetAmount = double.tryParse(targetString);
     }
 
     // 프리셋 데이터 로드
@@ -161,9 +146,12 @@ class SalaryProvider with ChangeNotifier {
       prefs.remove('activeWorkplacePresetId');
     }
 
-    // 수당 템플릿 저장
-    prefs.setString('allowance_templates',
-        jsonEncode(_allowanceTemplates.map((e) => e.toMap()).toList()));
+    // 목표 금액 저장
+    if (_monthlyTargetAmount != null) {
+      prefs.setString('monthly_target_amount', _monthlyTargetAmount.toString());
+    } else {
+      prefs.remove('monthly_target_amount');
+    }
 
     // [STUDY NOTE]: 시프트 리스트를 JSON 텍스트로 변환하여 저장합니다.
     final String shiftsString =
@@ -288,47 +276,13 @@ class SalaryProvider with ChangeNotifier {
   }
 
   // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-  // [STUDY NOTE]: 수당 템플릿 CRUD 메서드들입니다.
+  // [STUDY NOTE]: 목표 금액 관리 메서드
   // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-  void addAllowanceTemplate(AllowanceTemplate template) {
-    _allowanceTemplates.add(template);
-    _sortAllowanceTemplates();
+  void setMonthlyTargetAmount(double? amount) {
+    _monthlyTargetAmount = amount;
     saveData();
     notifyListeners();
-  }
-
-  void updateAllowanceTemplate(AllowanceTemplate updated) {
-    final idx = _allowanceTemplates.indexWhere((t) => t.id == updated.id);
-    if (idx != -1) {
-      _allowanceTemplates[idx] = updated;
-      _sortAllowanceTemplates();
-      saveData();
-      notifyListeners();
-    }
-  }
-
-  void deleteAllowanceTemplate(String id) {
-    _allowanceTemplates.removeWhere((t) => t.id == id);
-    saveData();
-    notifyListeners();
-  }
-
-  void toggleAllowanceTemplateActive(String id) {
-    final idx = _allowanceTemplates.indexWhere((t) => t.id == id);
-    if (idx != -1) {
-      _allowanceTemplates[idx] = _allowanceTemplates[idx].copyWith(
-        isActive: !_allowanceTemplates[idx].isActive,
-        updatedAt: DateTime.now(),
-      );
-      _sortAllowanceTemplates();
-      saveData();
-      notifyListeners();
-    }
-  }
-
-  void _sortAllowanceTemplates() {
-    _allowanceTemplates.sort((a, b) => b.updatedAt.compareTo(a.updatedAt));
   }
 
   void _applyPresetValues(WorkplacePreset preset) {
@@ -509,6 +463,25 @@ class SalaryProvider with ChangeNotifier {
     return shiftTotal + bonusTotal + weeklyHolidayTotal;
   }
 
+  /// 이번 달 예상 총 급여 (세전)
+  double getEstimatedMonthlyGrossSalary(DateTime date) {
+    double currentGross = getMonthlyTotalSalary(date);
+    int daysInMonth = DateUtils.getDaysInMonth(date.year, date.month);
+    double elapsedRatio = date.day / daysInMonth;
+
+    if (elapsedRatio < 0.15 || getShiftsForMonth(date).isEmpty) {
+      return 0.0;
+    }
+
+    return currentGross / elapsedRatio;
+  }
+
+  /// 이번 달 예상 급여 (세후)
+  double getEstimatedMonthlyNetSalary(DateTime date) {
+    double estimatedGross = getEstimatedMonthlyGrossSalary(date);
+    return estimatedGross * (1 - (_taxRate > 0 ? _taxRate : 0));
+  }
+
   /// 패턴 생성 로직
   Future<void> generatePatternShifts({
     required DateTime month,
@@ -596,7 +569,7 @@ class SalaryProvider with ChangeNotifier {
       'shiftPresets': _shiftPresets.map((p) => p.toMap()).toList(),
       'workplacePresets': _workplacePresets.map((p) => p.toMap()).toList(),
       'activeWorkplacePresetId': _activeWorkplacePresetId,
-      'allowanceTemplates': _allowanceTemplates.map((t) => t.toMap()).toList(),
+      'monthlyTargetAmount': _monthlyTargetAmount,
     };
     return jsonEncode(data);
   }
@@ -645,11 +618,8 @@ class SalaryProvider with ChangeNotifier {
           .map((e) => WorkplacePreset.fromMap(e as Map<String, dynamic>))
           .toList();
     }
-    if (data['allowanceTemplates'] != null) {
-      _allowanceTemplates = (data['allowanceTemplates'] as List)
-          .map((e) => AllowanceTemplate.fromMap(e as Map<String, dynamic>))
-          .toList();
-      _sortAllowanceTemplates();
+    if (data['monthlyTargetAmount'] != null) {
+      _monthlyTargetAmount = (data['monthlyTargetAmount'] as num).toDouble();
     }
 
     await saveData();

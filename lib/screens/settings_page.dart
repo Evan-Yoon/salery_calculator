@@ -13,7 +13,6 @@ import '../screens/pattern_generator_page.dart';
 import '../screens/workplace_preset_page.dart';
 import '../screens/csv_export_page.dart';
 import '../screens/cloud_backup_page.dart';
-import '../screens/allowance_templates_page.dart';
 import '../screens/notification_settings_page.dart';
 
 // [STUDY NOTE]: 앱 하단바에서 '설정' 탭을 눌렀을 때 보이는 화면입니다. 시급 설정 변경 기능이 있습니다.
@@ -382,18 +381,6 @@ class _SettingsPageState extends State<SettingsPage> {
             entryPoint: 'settings_cloud_backup',
             onTapAction: () => Navigator.push(context,
                 MaterialPageRoute(builder: (_) => const CloudBackupPage())),
-          ),
-          const Divider(height: 1, color: Colors.white10),
-          _buildPremiumTile(
-            title: '수당 템플릿',
-            icon: Icons.payments,
-            feature: PremiumFeature.allowanceTemplates,
-            featureHint: '수당 템플릿',
-            entryPoint: 'settings_allowance_templates',
-            onTapAction: () => Navigator.push(
-                context,
-                MaterialPageRoute(
-                    builder: (_) => const AllowanceTemplatesPage())),
           ),
           const Divider(height: 1, color: Colors.white10),
           _buildPremiumTile(

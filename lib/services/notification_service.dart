@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:timezone/data/latest_all.dart' as tz;
 import 'package:timezone/timezone.dart' as tz;
+import 'package:shared_preferences/shared_preferences.dart';
 import '../models/shift_entry.dart';
 
 /// [STUDY NOTE]: NotificationService는 앱의 로컬 알림(Local Notification)을
@@ -104,6 +105,11 @@ class NotificationService {
   // ─────────────────────────────────────────────
   Future<void> scheduleShiftReminder(ShiftEntry shift) async {
     if (!_initialized) await init();
+
+    final prefs = await SharedPreferences.getInstance();
+    final isEnabled = prefs.getBool('notification_shift_reminder') ?? true;
+    if (!isEnabled) return;
+
     final notifTime = shift.startTime.subtract(const Duration(minutes: 30));
 
     // 이미 지난 시간이면 등록하지 않음
