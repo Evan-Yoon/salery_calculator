@@ -130,9 +130,9 @@ class WorkplacePresetPage extends StatelessWidget {
                       color: Theme.of(context).colorScheme.primary,
                       borderRadius: BorderRadius.circular(20),
                     ),
-                    child: const Text('적용 중',
+                    child: Text('적용 중',
                         style: TextStyle(
-                            color: Colors.white,
+                            color: Theme.of(context).colorScheme.onPrimary,
                             fontSize: 11,
                             fontWeight: FontWeight.bold)),
                   ),
@@ -383,8 +383,8 @@ class _PresetEditSheetState extends State<_PresetEditSheet> {
                       borderRadius: BorderRadius.circular(14)),
                 ),
                 child: Text(isEdit ? '수정 완료' : '저장',
-                    style: const TextStyle(
-                        color: Colors.white,
+                    style: TextStyle(
+                        color: Theme.of(context).colorScheme.onPrimary,
                         fontSize: 16,
                         fontWeight: FontWeight.bold)),
               ),

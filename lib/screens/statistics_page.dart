@@ -249,14 +249,22 @@ class _StatisticsPageState extends State<StatisticsPage> {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Text('현재 ${(ratio * 100).toStringAsFixed(1)}% 달성',
-                  style: TextStyle(
-                      color: Theme.of(context).colorScheme.primary,
-                      fontWeight: FontWeight.bold,
-                      fontSize: 13)),
+              Flexible(
+                child: Text('현재 ${(ratio * 100).toStringAsFixed(1)}% 달성',
+                    style: TextStyle(
+                        color: Theme.of(context).colorScheme.primary,
+                        fontWeight: FontWeight.bold,
+                        fontSize: 13),
+                    overflow: TextOverflow.ellipsis),
+              ),
+              const SizedBox(width: 8),
               if (remain > 0)
-                Text('목표까지 ₩${formatter.format(remain)} 남음',
-                    style: const TextStyle(color: Colors.grey, fontSize: 12))
+                Flexible(
+                  child: Text('목표까지 ₩${formatter.format(remain)} 남음',
+                      style: const TextStyle(color: Colors.grey, fontSize: 12),
+                      overflow: TextOverflow.ellipsis,
+                      textAlign: TextAlign.right),
+                )
               else
                 const Text('목표 달성 완료! 🎉',
                     style: TextStyle(
@@ -337,8 +345,12 @@ class _StatisticsPageState extends State<StatisticsPage> {
           child: const Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Text('이번 달 예상 급여(세후) 🔒',
-                  style: TextStyle(color: Colors.grey, fontSize: 15)),
+              Flexible(
+                child: Text('이번 달 예상 급여(세후) 🔒',
+                    style: TextStyle(color: Colors.grey, fontSize: 15),
+                    overflow: TextOverflow.ellipsis),
+              ),
+              SizedBox(width: 8),
               Text('Premium',
                   style: TextStyle(
                       color: Colors.amber,
@@ -364,12 +376,15 @@ class _StatisticsPageState extends State<StatisticsPage> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Row(
-            children: const [
+          const Row(
+            children: [
               Icon(Icons.monetization_on, color: Colors.green, size: 20),
               SizedBox(width: 8),
-              Text('이번 달 예상 급여(세후)',
-                  style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15)),
+              Expanded(
+                child: Text('이번 달 예상 급여(세후)',
+                    style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15),
+                    overflow: TextOverflow.ellipsis),
+              ),
             ],
           ),
           const SizedBox(height: 4),
@@ -386,26 +401,40 @@ class _StatisticsPageState extends State<StatisticsPage> {
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                const Text('예상 월 총 세전 급여',
-                    style: TextStyle(color: Colors.grey, fontSize: 13)),
-                Text('₩${formatter.format(estimatedGross)}',
-                    style: const TextStyle(
-                        color: Colors.white,
-                        fontSize: 13,
-                        fontWeight: FontWeight.bold)),
+                const Flexible(
+                  child: Text('예상 월 총 세전 급여',
+                      style: TextStyle(color: Colors.grey, fontSize: 13),
+                      overflow: TextOverflow.ellipsis),
+                ),
+                Flexible(
+                  child: Text('₩${formatter.format(estimatedGross)}',
+                      style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 13,
+                          fontWeight: FontWeight.bold),
+                      overflow: TextOverflow.ellipsis,
+                      textAlign: TextAlign.right),
+                ),
               ],
             ),
             const SizedBox(height: 4),
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                const Text('적용 세율 (간편 추정)',
-                    style: TextStyle(color: Colors.grey, fontSize: 13)),
-                Text('${(provider.taxRate * 100).toStringAsFixed(1)}%',
-                    style: const TextStyle(
-                        color: Colors.white,
-                        fontSize: 13,
-                        fontWeight: FontWeight.bold)),
+                const Flexible(
+                  child: Text('적용 세율 (간편 추정)',
+                      style: TextStyle(color: Colors.grey, fontSize: 13),
+                      overflow: TextOverflow.ellipsis),
+                ),
+                Flexible(
+                  child: Text('${(provider.taxRate * 100).toStringAsFixed(1)}%',
+                      style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 13,
+                          fontWeight: FontWeight.bold),
+                      overflow: TextOverflow.ellipsis,
+                      textAlign: TextAlign.right),
+                ),
               ],
             ),
             const SizedBox(height: 12),
@@ -705,10 +734,10 @@ class _StatisticsPageState extends State<StatisticsPage> {
                     title:
                         '${((shiftTotal / total) * 100).toStringAsFixed(0)}%',
                     radius: 20,
-                    titleStyle: const TextStyle(
+                    titleStyle: TextStyle(
                         fontSize: 10,
                         fontWeight: FontWeight.bold,
-                        color: Colors.white),
+                        color: Theme.of(context).colorScheme.onPrimary),
                   ),
                   if (bonusTotal > 0)
                     PieChartSectionData(
@@ -720,7 +749,7 @@ class _StatisticsPageState extends State<StatisticsPage> {
                       titleStyle: const TextStyle(
                           fontSize: 10,
                           fontWeight: FontWeight.bold,
-                          color: Colors.white),
+                          color: Colors.black87),
                     ),
                 ],
               ),

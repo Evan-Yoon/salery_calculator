@@ -201,10 +201,10 @@ class _PaywallPageState extends State<PaywallPage> {
                         ),
                         child: Text(
                           _isYearlySelected ? '3일 무료 체험으로 시작하기' : '월 구독 시작하기',
-                          style: const TextStyle(
+                          style: TextStyle(
                             fontSize: 18,
                             fontWeight: FontWeight.bold,
-                            color: Colors.white,
+                            color: Theme.of(context).colorScheme.onPrimary,
                           ),
                         ),
                       ),
@@ -372,10 +372,10 @@ class _PaywallPageState extends State<PaywallPage> {
                 ),
                 child: Text(
                   badgeText,
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 10,
                     fontWeight: FontWeight.bold,
-                    color: Colors.white,
+                    color: Theme.of(context).colorScheme.onPrimary,
                   ),
                 ),
               )

@@ -134,30 +134,33 @@ class _SettingsPageState extends State<SettingsPage> {
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    DropdownButton<String>(
-                      value: _wageType,
-                      underline: const SizedBox(),
-                      icon:
-                          const Icon(Icons.arrow_drop_down, color: Colors.grey),
-                      style: TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.bold,
-                          color: Theme.of(context).textTheme.bodyLarge?.color),
-                      items: ['시급', '월급', '연봉'].map((String value) {
-                        return DropdownMenuItem<String>(
-                          value: value,
-                          child: Text(value),
-                        );
-                      }).toList(),
-                      onChanged: _onWageTypeChanged,
-                    ),
-                    const Text('금액을 입력하세요',
-                        style: TextStyle(fontSize: 12, color: Colors.grey)),
-                  ],
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      DropdownButton<String>(
+                        value: _wageType,
+                        underline: const SizedBox(),
+                        icon:
+                            const Icon(Icons.arrow_drop_down, color: Colors.grey),
+                        style: TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.bold,
+                            color: Theme.of(context).textTheme.bodyLarge?.color),
+                        items: ['시급', '월급', '연봉'].map((String value) {
+                          return DropdownMenuItem<String>(
+                            value: value,
+                            child: Text(value),
+                          );
+                        }).toList(),
+                        onChanged: _onWageTypeChanged,
+                      ),
+                      const Text('금액을 입력하세요',
+                          style: TextStyle(fontSize: 12, color: Colors.grey)),
+                    ],
+                  ),
                 ),
+                const SizedBox(width: 8),
                 Row(
                   children: [
                     SizedBox(
@@ -308,7 +311,7 @@ class _SettingsPageState extends State<SettingsPage> {
         ),
         child: const Row(
           children: [
-            Icon(Icons.workspace_premium, color: Colors.white, size: 32),
+            Icon(Icons.workspace_premium, color: Colors.black87, size: 32),
             SizedBox(width: 16),
             Expanded(
               child: Column(
@@ -316,16 +319,16 @@ class _SettingsPageState extends State<SettingsPage> {
                 children: [
                   Text('Premium 업그레이드',
                       style: TextStyle(
-                          color: Colors.white,
+                          color: Colors.black87,
                           fontWeight: FontWeight.bold,
                           fontSize: 16)),
                   SizedBox(height: 4),
                   Text('모든 프리미엄 기능을 무제한으로 사용하세요!',
-                      style: TextStyle(color: Colors.white, fontSize: 12)),
+                      style: TextStyle(color: Colors.black54, fontSize: 12)),
                 ],
               ),
             ),
-            Icon(Icons.chevron_right, color: Colors.white),
+            Icon(Icons.chevron_right, color: Colors.black54),
           ],
         ),
       ),
@@ -430,7 +433,11 @@ class _SettingsPageState extends State<SettingsPage> {
         leading: Icon(icon, color: Colors.grey),
         title: Row(
           children: [
-            Text('$title 🔒', style: const TextStyle(color: Colors.grey)),
+            Flexible(
+              child: Text('$title 🔒',
+                  style: const TextStyle(color: Colors.grey),
+                  overflow: TextOverflow.ellipsis),
+            ),
             const SizedBox(width: 8),
             const Text('Premium',
                 style: TextStyle(

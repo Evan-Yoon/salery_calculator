@@ -181,12 +181,21 @@ class _CsvExportPageState extends State<CsvExportPage> {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
-        Text(label, style: const TextStyle(color: Colors.grey)),
-        Text(
-          value,
-          style: TextStyle(
-            fontWeight: highlight ? FontWeight.bold : FontWeight.normal,
-            color: highlight ? Theme.of(context).colorScheme.primary : null,
+        Flexible(
+          child: Text(label,
+              style: const TextStyle(color: Colors.grey),
+              overflow: TextOverflow.ellipsis),
+        ),
+        const SizedBox(width: 8),
+        Flexible(
+          child: Text(
+            value,
+            style: TextStyle(
+              fontWeight: highlight ? FontWeight.bold : FontWeight.normal,
+              color: highlight ? Theme.of(context).colorScheme.primary : null,
+            ),
+            overflow: TextOverflow.ellipsis,
+            textAlign: TextAlign.right,
           ),
         ),
       ],
