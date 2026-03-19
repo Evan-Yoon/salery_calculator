@@ -46,12 +46,22 @@ class PresetSection extends StatelessWidget {
           ),
         ),
         const SizedBox(height: 12),
-        TextButton.icon(
-          onPressed: () => _showAddPresetDialog(context, provider),
-          icon: const Icon(Icons.add),
-          label: const Text('근무 프리셋 추가하기'),
-          style: TextButton.styleFrom(
-            foregroundColor: Theme.of(context).primaryColor,
+        SizedBox(
+          width: double.infinity,
+          height: 52,
+          child: ElevatedButton.icon(
+            onPressed: () => _showAddPresetDialog(context, provider),
+            icon: const Icon(Icons.add),
+            label: const Text('근무 프리셋 추가하기',
+                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+            style: ElevatedButton.styleFrom(
+              backgroundColor:
+                  Theme.of(context).colorScheme.primary.withValues(alpha: 0.15),
+              foregroundColor: Theme.of(context).colorScheme.primary,
+              elevation: 0,
+              shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(16)),
+            ),
           ),
         ),
       ],

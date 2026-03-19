@@ -127,11 +127,10 @@ class _PaywallPageState extends State<PaywallPage> {
                   // 기능 강조 카드 목록 (1줄 설명)
                   _buildFeatureCard(Icons.auto_awesome, '교대 패턴 자동 생성 및 반복'),
                   _buildFeatureCard(
-                      Icons.local_hospital, '병원별 급여 규정 맞춤 저장 (야간/공휴일 등)'),
+                      Icons.business_center, 'N잡 관리 및 근무지별 급여 규정 맞춤 저장'),
                   _buildFeatureCard(
-                      Icons.receipt_long, '증빙용 월말 정산 리포트 및 엑셀 내보내기'),
+                      Icons.table_chart, '증빙용 월말 정산 엑셀(CSV) 리포트 내보내기'),
                   _buildFeatureCard(Icons.cloud_sync, '기기 변경 시 안전한 데이터 백업/복원'),
-                  _buildFeatureCard(Icons.monetization_on, '이번 달 예상 급여(세후) 확인'),
                   _buildFeatureCard(
                       Icons.notifications_active, '근무 전/월말/주휴 스마트 알림 제공'),
 

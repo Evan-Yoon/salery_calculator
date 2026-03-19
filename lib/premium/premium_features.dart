@@ -3,6 +3,5 @@ enum PremiumFeature {
   workplacePresets,
   cloudBackup,
   excelExport,
-  estimatedNetSalary,
   smartNotifications
 }
