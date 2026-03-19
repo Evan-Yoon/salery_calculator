@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../providers/salary_provider.dart';
+import 'onboarding_page.dart';
 
 // [STUDY NOTE]: 앱을 최초 실행 시 반드시 동의해야 하는 법적 고지 및 개인정보 취급 방침 화면입니다.
 class LegalOnboardingPage extends StatelessWidget {
@@ -49,9 +50,9 @@ class LegalOnboardingPage extends StatelessWidget {
                         ),
                         SizedBox(height: 20),
                         _BulletPoint(
-                          title: '정보는 외부로 전송되지 않습니다 (Zero-Data 전송)',
+                          title: '데이터는 기기에 안전하게 저장됩니다.',
                           description:
-                              '사용자가 입력하는 근무 시간, 급여 정보 등의 모든 민감 데이터는 사용자의 스마트폰(로컬 저장소)에만 저장되며, 어떠한 형태의 외부 서버 수집이나 전송도 이루어지지 않습니다.',
+                              '입력된 근무 및 급여 정보는 기본적으로 사용자의 기기 내부에만 저장됩니다. 단, 프리미엄 백업 기능(Google 클라우드 로그인 연동) 사용 시에는 데이터 보존을 위해 사용자의 개인 클라우드에 데이터가 안전하게 백업 및 보관됩니다.',
                         ),
                         SizedBox(height: 20),
                         _BulletPoint(
@@ -70,6 +71,9 @@ class LegalOnboardingPage extends StatelessWidget {
                   // 동의 시 상태 업데이트 후 다음 화면(OnboardingPage)으로 이동
                   Provider.of<SalaryProvider>(context, listen: false)
                       .agreeToLegalTerms();
+                  Navigator.of(context).pushReplacement(
+                    MaterialPageRoute(builder: (_) => const OnboardingPage()),
+                  );
                 },
                 style: ElevatedButton.styleFrom(
                   backgroundColor: const Color(0xFF2B8CEE),
