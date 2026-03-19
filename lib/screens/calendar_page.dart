@@ -89,22 +89,51 @@ class _CalendarPageState extends State<CalendarPage> {
           if (shifts.isEmpty) {
             // 보너스만 있는 경우 기본 마커
             return Positioned(
-              right: 4,
-              bottom: 4,
-              child: Icon(Icons.star,
-                  size: 10, color: Colors.amber.withValues(alpha: 0.8)),
+              right: 2,
+              bottom: 2,
+              child: Container(
+                padding: const EdgeInsets.all(3),
+                decoration: BoxDecoration(
+                  color: Colors.amber,
+                  shape: BoxShape.circle,
+                  boxShadow: [
+                    BoxShadow(
+                        color: Colors.black.withValues(alpha: 0.2),
+                        blurRadius: 2,
+                        offset: const Offset(0, 1))
+                  ],
+                ),
+                child: const Icon(Icons.monetization_on,
+                    size: 12, color: Colors.white),
+              ),
             );
           }
 
           // 첫 번째 근무의 아이콘 표시
           final iconType = shifts.first.iconType ?? 'work';
+          final iconColor =
+              _getIconColor(iconType, Theme.of(context).colorScheme.primary);
+
           return Positioned(
-            right: 4,
-            bottom: 4,
-            child: Icon(
-              _getIconData(iconType),
-              size: 12,
-              color: Theme.of(context).primaryColor,
+            right: 2,
+            bottom: 2,
+            child: Container(
+              padding: const EdgeInsets.all(3),
+              decoration: BoxDecoration(
+                color: iconColor,
+                shape: BoxShape.circle,
+                boxShadow: [
+                  BoxShadow(
+                      color: Colors.black.withValues(alpha: 0.2),
+                      blurRadius: 2,
+                      offset: const Offset(0, 1))
+                ],
+              ),
+              child: Icon(
+                _getIconData(iconType),
+                size: 12,
+                color: Colors.white,
+              ),
             ),
           );
         },
@@ -305,6 +334,26 @@ class _CalendarPageState extends State<CalendarPage> {
     return Dismissible(
       key: Key(shift.id),
       direction: DismissDirection.endToStart,
+      confirmDismiss: (direction) async {
+        return await showDialog<bool>(
+          context: context,
+          builder: (ctx) => AlertDialog(
+            title: const Text('기록 삭제'),
+            content: const Text('이 근무 기록을 정말 삭제하시겠습니까?'),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(ctx, false),
+                child: const Text('취소', style: TextStyle(color: Colors.grey)),
+              ),
+              TextButton(
+                onPressed: () => Navigator.pop(ctx, true),
+                style: TextButton.styleFrom(foregroundColor: Colors.red),
+                child: const Text('삭제'),
+              ),
+            ],
+          ),
+        );
+      },
       onDismissed: (_) {
         Provider.of<SalaryProvider>(context, listen: false)
             .removeShift(shift.id);
@@ -350,6 +399,26 @@ class _CalendarPageState extends State<CalendarPage> {
     return Dismissible(
       key: Key(bonus.id),
       direction: DismissDirection.endToStart,
+      confirmDismiss: (direction) async {
+        return await showDialog<bool>(
+          context: context,
+          builder: (ctx) => AlertDialog(
+            title: const Text('수입 삭제'),
+            content: const Text('이 비정기 수입 기록을 정말 삭제하시겠습니까?'),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(ctx, false),
+                child: const Text('취소', style: TextStyle(color: Colors.grey)),
+              ),
+              TextButton(
+                onPressed: () => Navigator.pop(ctx, true),
+                style: TextButton.styleFrom(foregroundColor: Colors.red),
+                child: const Text('삭제'),
+              ),
+            ],
+          ),
+        );
+      },
       onDismissed: (_) {
         Provider.of<SalaryProvider>(context, listen: false)
             .removeBonus(bonus.id);
@@ -443,6 +512,28 @@ class _CalendarPageState extends State<CalendarPage> {
         );
       },
     );
+  }
+
+  Color _getIconColor(String type, Color defaultColor) {
+    switch (type) {
+      case 'sunny':
+        return Colors.orange;
+      case 'cloud':
+        return Colors.blue;
+      case 'night':
+        return Colors.deepPurpleAccent;
+      case 'star':
+        return Colors.amber;
+      case 'heart':
+        return Colors.redAccent;
+      case 'coffee':
+        return Colors.brown;
+      case 'home':
+        return Colors.teal;
+      case 'work':
+      default:
+        return defaultColor;
+    }
   }
 
   IconData _getIconData(String type) {

@@ -99,6 +99,26 @@ class ShiftHistoryPage extends StatelessWidget {
     return Dismissible(
       key: Key(shift.id),
       direction: DismissDirection.endToStart,
+      confirmDismiss: (direction) async {
+        return await showDialog<bool>(
+          context: context,
+          builder: (ctx) => AlertDialog(
+            title: const Text('기록 삭제'),
+            content: const Text('이 근무 기록을 정말 삭제하시겠습니까?'),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(ctx, false),
+                child: const Text('취소', style: TextStyle(color: Colors.grey)),
+              ),
+              TextButton(
+                onPressed: () => Navigator.pop(ctx, true),
+                style: TextButton.styleFrom(foregroundColor: Colors.red),
+                child: const Text('삭제'),
+              ),
+            ],
+          ),
+        );
+      },
       onDismissed: (_) {
         provider.removeShift(shift.id);
       },
